@@ -205,7 +205,7 @@ export default function IngresoVentaForm() {
         <Section title="3. Datos del domicilio" className={section}>
           <Field label="Comuna" cls={label}><input className={input} required value={data.comuna} onChange={(e) => set("comuna", upper(e.target.value))} /></Field>
           <Field label="Tipo de vía" cls={label}><Select cls={input} value={data.via} onChange={(v) => { set("via", v); set("complemento", ""); set("complementoDato", ""); }} options={vias} /></Field>
-          <Field label="Nombre y número" cls={label}><input className={input} required value={data.direccion} onChange={(e) => set("direccion", upper(e.target.value))} /></Field>
+          <Field label={urban || !data.via ? "Nombre y número" : data.via} cls={label}><input className={input} required value={data.direccion} onChange={(e) => set("direccion", upper(e.target.value))} /></Field>
           {data.via && <><Field label="Tipo de complemento" cls={label}><Select cls={input} value={data.complemento} onChange={(v) => set("complemento", v)} options={urban ? urbanas : rurales} /></Field><Field label={`Nombre o número de ${data.complemento || "complemento"}`} cls={label}><input className={input} required value={data.complementoDato} onChange={(e) => set("complementoDato", upper(e.target.value))} /></Field></>}
           <div className="sm:col-span-2"><label className={label}>Referencias</label><textarea className={input} rows={3} value={data.referencias} onChange={(e) => set("referencias", upper(e.target.value))} /></div>
         </Section>
