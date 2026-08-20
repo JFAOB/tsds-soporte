@@ -217,7 +217,7 @@ export default function IngresoVentaForm() {
           {hasMode && <Field label="Modalidad" cls={label}><Select cls={input} value={data.modalidad} onChange={(v) => set("modalidad", v)} options={["NORMAL", "CONVENIO"]} /></Field>}
         </Section>
 
-        {equipment && <Section title="5. Equipamiento" className={section}><Field label={`Cantidad de ${equipment}`} cls={label}><Select cls={input} value={data.cantidadEquipo} onChange={(v) => set("cantidadEquipo", v)} options={["1", "2", "3", "4", "5", "6"]} /></Field></Section>}
+        {equipment && <Section title="5. Equipamiento" className={section}><Field label={`Cantidad de ${equipment}`} cls={label}><Select cls={input} value={data.cantidadEquipo} onChange={(v) => set("cantidadEquipo", v)} options={equipment === "GOBOX" ? ["0", "1", "2", "3", "4", "5", "6"] : ["1", "2", "3", "4", "5", "6"]} /></Field></Section>}
 
         {hasFlex && <Section title="6. Premium flexibles" className={section}><p className="sm:col-span-2 -mt-2 text-sm text-slate-500">Seleccione exactamente 2 ({data.premiumFlex.length}/2)</p><div className="sm:col-span-2 grid gap-2 sm:grid-cols-2">{flexibles.map((item) => <Check key={item} item={item} checked={data.premiumFlex.includes(item)} disabled={!data.premiumFlex.includes(item) && data.premiumFlex.length >= 2} onChange={() => toggleFlex(item)} />)}</div></Section>}
 
