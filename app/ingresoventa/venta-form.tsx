@@ -71,12 +71,17 @@ export default function IngresoVentaForm() {
       : data.categoria === "DÚO INTERNET + TV SATELITAL"
         ? Boolean(data.plan)
         : ["DGO FLEX 500", "DGO FLEX 800", "DGO FLEX 940"].includes(data.plan);
-  const hasFlex = ["TV FLEX", "TV FULL", "DGO FLEX 500", "DGO FLEX 800", "DGO FLEX 940", "DÚO TV FLEX", "DÚO TV FULL"].includes(data.plan);
+  const isCupoDgoFull = data.plan === "CUPO DÚO DGO FULL 800";
+  const hasFlex = ["TV FLEX", "TV FULL", "DGO FLEX 500", "DGO FLEX 800", "DGO FLEX 940", "DÚO TV FLEX", "DÚO TV FULL", "CUPO DÚO DGO FULL 800"].includes(data.plan);
+  const requiredFlexCount = isCupoDgoFull ? 1 : 2;
+  const availableFlex = isCupoDgoFull ? ["DISNEY+"] : flexibles;
+  const hasAdditional = Boolean(data.categoria && data.categoria !== "SOLO INTERNET" && !isCupoDgoFull);
   const equipment = data.categoria === "DGO FLEX" ? "GOBOX" : ["TV SATELITAL", "DÚO INTERNET + TV SATELITAL"].includes(data.categoria) ? "DECOS" : "";
 
   function toggleFlex(item: string) {
     const selected = data.premiumFlex.includes(item);
-    if (!selected && data.premiumFlex.length >= 2) return;
+    if (isCupoDgoFull) return;
+    if (!selected && data.premiumFlex.length >= requiredFlexCount) return;
     set("premiumFlex", selected ? data.premiumFlex.filter((x) => x !== item) : [...data.premiumFlex, item]);
   }
 
@@ -89,7 +94,7 @@ export default function IngresoVentaForm() {
   function validate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!validRut(data.rut)) { setMensaje("Ingrese un RUT chileno válido."); return; }
-    if (hasFlex && data.premiumFlex.length !== 2) { setMensaje("Debe seleccionar exactamente 2 Premium Flexibles."); return; }
+    if (hasFlex && data.premiumFlex.length !== requiredFlexCount) { setMensaje(`Debe seleccionar exactamente ${requiredFlexCount} Premium ${requiredFlexCount === 1 ? "Flexible" : "Flexibles"}.`); return; }
     setMensaje("");
     setVista("preview");
     setTimeout(drawCanvas, 50);
@@ -109,7 +114,7 @@ export default function IngresoVentaForm() {
       ["PLAN", `${data.categoria} · ${data.plan}`], ...(data.velocidad ? [["VELOCIDAD", `${data.velocidad} MBPS`] as [string, string]] : []),
       ...(data.modalidad ? [["MODALIDAD", data.modalidad] as [string, string]] : []), ...(equipment ? [["EQUIPAMIENTO", `${data.cantidadEquipo} ${equipment}`] as [string, string]] : []),
       ...(hasFlex ? [["PREMIUM FLEXIBLES", data.premiumFlex.join(" · ")] as [string, string]] : []),
-      ...(data.categoria !== "SOLO INTERNET" ? [["PREMIUM ADICIONALES", data.premiumAdicional.length ? data.premiumAdicional.join(" · ") : "NINGUNO"] as [string, string]] : []),
+      ...(hasAdditional ? [["PREMIUM ADICIONALES", data.premiumAdicional.length ? data.premiumAdicional.join(" · ") : "NINGUNO"] as [string, string]] : []),
       ["COSTO INSTALACIÓN", `$${Number(data.costo).toLocaleString("es-CL")}`], ["MEDIO DE PAGO", data.pago === "TARJETA" ? `TARJETA · ${data.tarjeta}` : data.pago],
     ] as [string, string][];
 
@@ -212,18 +217,18 @@ export default function IngresoVentaForm() {
 
         <Section title="4. Plan contratado" className={section}>
           <Field label="Categoría" cls={label}><Select cls={input} value={data.categoria} onChange={(v) => setData((old) => ({ ...old, categoria: v as Category, plan: "", velocidad: "", modalidad: "", cantidadEquipo: "", premiumFlex: [], premiumAdicional: [] }))} options={Object.keys(plans)} /></Field>
-          {data.categoria && <Field label="Plan" cls={label}><Select cls={input} value={data.plan} onChange={(v) => setData((old) => ({ ...old, plan: v, modalidad: "", premiumFlex: [], premiumAdicional: [] }))} options={plans[data.categoria]} /></Field>}
+          {data.categoria && <Field label="Plan" cls={label}><Select cls={input} value={data.plan} onChange={(v) => setData((old) => ({ ...old, plan: v, modalidad: "", premiumFlex: v === "CUPO DÚO DGO FULL 800" ? ["DISNEY+"] : [], premiumAdicional: [] }))} options={plans[data.categoria]} /></Field>}
           {data.categoria === "DÚO INTERNET + TV SATELITAL" && <Field label="Velocidad de internet" cls={label}><Select cls={input} value={data.velocidad} onChange={(v) => set("velocidad", v)} options={["500", "800", "940"]} /></Field>}
           {hasMode && <Field label="Modalidad" cls={label}><Select cls={input} value={data.modalidad} onChange={(v) => set("modalidad", v)} options={["NORMAL", "CONVENIO"]} /></Field>}
         </Section>
 
         {equipment && <Section title="5. Equipamiento" className={section}><Field label={`Cantidad de ${equipment}`} cls={label}><Select cls={input} value={data.cantidadEquipo} onChange={(v) => set("cantidadEquipo", v)} options={equipment === "GOBOX" ? ["0", "1", "2", "3", "4", "5", "6"] : ["1", "2", "3", "4", "5", "6"]} /></Field></Section>}
 
-        {hasFlex && <Section title="6. Premium flexibles" className={section}><p className="sm:col-span-2 -mt-2 text-sm text-slate-500">Seleccione exactamente 2 ({data.premiumFlex.length}/2)</p><div className="sm:col-span-2 grid gap-2 sm:grid-cols-2">{flexibles.map((item) => <Check key={item} item={item} checked={data.premiumFlex.includes(item)} disabled={!data.premiumFlex.includes(item) && data.premiumFlex.length >= 2} onChange={() => toggleFlex(item)} />)}</div></Section>}
+        {hasFlex && <Section title="6. Premium flexibles" className={section}><p className="sm:col-span-2 -mt-2 text-sm text-slate-500">{isCupoDgoFull ? "Disney+ incluido obligatoriamente en este plan." : `Seleccione exactamente 2 (${data.premiumFlex.length}/2)`}</p><div className="sm:col-span-2 grid gap-2 sm:grid-cols-2">{availableFlex.map((item) => <Check key={item} item={item} checked={data.premiumFlex.includes(item)} disabled={isCupoDgoFull || (!data.premiumFlex.includes(item) && data.premiumFlex.length >= requiredFlexCount)} onChange={() => toggleFlex(item)} />)}</div></Section>}
 
-        {data.categoria && data.categoria !== "SOLO INTERNET" && <Section title={`${hasFlex ? "7" : "6"}. Premium adicionales`} className={section}><p className="sm:col-span-2 -mt-2 text-sm text-slate-500">Opcional. Las opciones elegidas como flexibles no pueden repetirse.</p><div className="sm:col-span-2 grid gap-2 sm:grid-cols-2">{adicionales.map((item) => <Check key={item} item={item} checked={data.premiumAdicional.includes(item)} disabled={duplicateAdditional(item)} onChange={() => set("premiumAdicional", data.premiumAdicional.includes(item) ? data.premiumAdicional.filter((x) => x !== item) : [...data.premiumAdicional, item])} />)}</div></Section>}
+        {hasAdditional && <Section title={`${hasFlex ? "7" : "6"}. Premium adicionales`} className={section}><p className="sm:col-span-2 -mt-2 text-sm text-slate-500">Opcional. Las opciones elegidas como flexibles no pueden repetirse.</p><div className="sm:col-span-2 grid gap-2 sm:grid-cols-2">{adicionales.map((item) => <Check key={item} item={item} checked={data.premiumAdicional.includes(item)} disabled={duplicateAdditional(item)} onChange={() => set("premiumAdicional", data.premiumAdicional.includes(item) ? data.premiumAdicional.filter((x) => x !== item) : [...data.premiumAdicional, item])} />)}</div></Section>}
 
-        <Section title={`${data.categoria === "SOLO INTERNET" ? "5" : hasFlex ? "8" : "7"}. Forma de pago`} className={section}>
+        <Section title={`${data.categoria === "SOLO INTERNET" ? "5" : hasFlex && hasAdditional ? "8" : "7"}. Forma de pago`} className={section}>
           <Field label="Costo de instalación" cls={label}><div className="relative"><span className="absolute left-4 top-3 text-slate-500">$</span><input className={`${input} pl-8`} required type="number" min="0" inputMode="numeric" value={data.costo} onChange={(e) => set("costo", e.target.value)} /></div></Field>
           <Field label="Método de pago" cls={label}><Select cls={input} value={data.pago} onChange={(v) => { set("pago", v); if (v !== "TARJETA") set("tarjeta", ""); }} options={["EFECTIVO", "TARJETA", "PAC"]} /></Field>
           {data.pago === "TARJETA" && <Field label="Tipo de tarjeta" cls={label}><Select cls={input} value={data.tarjeta} onChange={(v) => set("tarjeta", v)} options={["MASTERCARD", "VISA", "AMERICAN EXPRESS"]} /></Field>}
