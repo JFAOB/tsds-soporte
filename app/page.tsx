@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Home() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -151,13 +152,20 @@ export default function Home() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
-        <h1 className="text-5xl font-bold text-blue-700 mb-2">
-          TSDS
-        </h1>
+        <div className="relative mx-auto mb-4 h-40 w-full max-w-[340px] overflow-hidden">
+          <Image
+            src="/logo-tsds.png"
+            alt="Televisión Satelital del Sur SpA"
+            width={640}
+            height={640}
+            priority
+            className="absolute left-1/2 top-[-72px] w-[320px] max-w-none -translate-x-1/2"
+          />
+        </div>
 
-        <h2 className="text-2xl font-semibold text-gray-900 mb-10">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-10">
           Centro de Soporte
-        </h2>
+        </h1>
 
         <button
           onClick={() => setMostrarFormulario(true)}
