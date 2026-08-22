@@ -154,7 +154,7 @@ export default function Home() {
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
         <div className="relative mx-auto mb-4 h-40 w-full max-w-[340px] overflow-hidden">
           <Image
-            src="/logo-tsds.png"
+            src="/logo-tsds-white.png"
             alt="Televisión Satelital del Sur SpA"
             width={640}
             height={640}
