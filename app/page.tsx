@@ -14,23 +14,27 @@ export default function Home() {
     setCargando(true);
 
     const form = e.currentTarget;
-    const data = new FormData(form);
+    const data = Object.fromEntries(new FormData(form));
 
-    const response = await fetch("https://formspree.io/f/mwleedje", {
-      method: "POST",
-      body: data,
-      headers: {
-        Accept: "application/json",
-      },
-    });
+    try {
+      const response = await fetch("/api/soporte", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-    setCargando(false);
+      if (!response.ok) {
+        throw new Error("No fue posible enviar la solicitud.");
+      }
 
-    if (response.ok) {
       setEnviado(true);
       form.reset();
-    } else {
+    } catch {
       alert("Ocurrió un error al enviar la solicitud. Intente nuevamente.");
+    } finally {
+      setCargando(false);
     }
   }
 
@@ -82,6 +86,17 @@ export default function Home() {
           </h2>
 
           <div className="space-y-4">
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="empresa">Empresa</label>
+              <input
+                id="empresa"
+                name="empresa"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+
             <input
               name="nombre"
               required
