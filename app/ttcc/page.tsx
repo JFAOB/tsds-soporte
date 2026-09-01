@@ -28,6 +28,36 @@ type ClimaCiudad = {
   manana: Dia;
 };
 
+type Formulario = {
+  suscriptor: string;
+  idCto: string;
+  potenciaCto: string;
+  clienteNavega: string;
+  clienteNavego: string;
+  otrosClientes: string;
+  modemDomicilio: string;
+  desconectadoTercero: string;
+  luzPon: string;
+  luzLos: string;
+  luzInternet: string;
+  comentarios: string;
+};
+
+const formularioInicial: Formulario = {
+  suscriptor: "",
+  idCto: "",
+  potenciaCto: "",
+  clienteNavega: "",
+  clienteNavego: "",
+  otrosClientes: "",
+  modemDomicilio: "",
+  desconectadoTercero: "",
+  luzPon: "",
+  luzLos: "",
+  luzInternet: "",
+  comentarios: "",
+};
+
 function descripcionClima(codigo: number) {
   if (codigo === 0) return "Despejado";
   if (codigo === 1) return "Mayormente despejado";
@@ -77,6 +107,13 @@ export default function TTCC() {
   const [climas, setClimas] = useState<ClimaCiudad[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+
+  const [tipoTicket, setTipoTicket] = useState("");
+  const [formulario, setFormulario] =
+    useState<Formulario>(formularioInicial);
+
+  const [textoGenerado, setTextoGenerado] = useState("");
+  const [copiado, setCopiado] = useState(false);
 
   async function cargarClima() {
     setCargando(true);
@@ -138,6 +175,68 @@ export default function TTCC() {
     cargarClima();
   }, []);
 
+  const formularioCompleto =
+    tipoTicket === "AT: CLIENTE SIN SERVICIO" ||
+    tipoTicket === "ERROR DE ACTIVACIÓN EN OPTIMUS" ||
+    tipoTicket === "INS: CLIENTE SIN SERVICIO";
+
+  function actualizarCampo(
+    campo: keyof Formulario,
+    valor: string
+  ) {
+    setFormulario((prev) => ({
+      ...prev,
+      [campo]: valor,
+    }));
+  }
+
+  function generarTexto() {
+    if (!tipoTicket) {
+      alert("Seleccione un tipo de ticket.");
+      return;
+    }
+
+    let texto = "";
+
+    texto += `TIPO DE TICKET: ${tipoTicket}\n`;
+    texto += `Suscriptor: ${formulario.suscriptor}\n`;
+    texto += `ID CTO: ${formulario.idCto}\n`;
+    texto += `Potencia CTO: ${formulario.potenciaCto}\n`;
+
+    if (formularioCompleto) {
+      texto += `Cliente navega: ${formulario.clienteNavega}\n`;
+      texto += `Cliente navegó: ${formulario.clienteNavego}\n`;
+      texto += `CTO con otros clientes conectados: ${formulario.otrosClientes}\n`;
+      texto += `Módem conectado en domicilio: ${formulario.modemDomicilio}\n`;
+      texto += `Desconectado por un tercero: ${formulario.desconectadoTercero}\n`;
+      texto += `Luz PON: ${formulario.luzPon}\n`;
+      texto += `Luz LOS: ${formulario.luzLos}\n`;
+      texto += `Luz Internet: ${formulario.luzInternet}\n`;
+    }
+
+    texto += `Comentarios: ${formulario.comentarios}`;
+
+    setTextoGenerado(texto);
+    setCopiado(false);
+  }
+
+  async function copiarTexto() {
+    if (!textoGenerado) return;
+
+    await navigator.clipboard.writeText(textoGenerado);
+    setCopiado(true);
+
+    setTimeout(() => {
+      setCopiado(false);
+    }, 2000);
+  }
+
+  function limpiarFormulario() {
+    setFormulario(formularioInicial);
+    setTextoGenerado("");
+    setCopiado(false);
+  }
+
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-3">
       <div className="max-w-[1500px] mx-auto">
@@ -177,40 +276,290 @@ export default function TTCC() {
           </div>
         )}
 
-        {/* CIUDADES */}
+        {/* CLIMA */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           {climas.map((ciudad) => (
             <div
               key={ciudad.nombre}
               className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
             >
-              {/* NOMBRE CIUDAD */}
               <div className="bg-blue-800 text-white text-center py-2">
                 <h2 className="font-bold text-sm">
                   {ciudad.nombre}
                 </h2>
               </div>
 
-              {/* HOY / MAÑANA */}
               <div className="grid grid-cols-2 divide-x divide-gray-200">
-                <DiaClima
-                  titulo="HOY"
-                  dia={ciudad.hoy}
-                />
-
-                <DiaClima
-                  titulo="MAÑANA"
-                  dia={ciudad.manana}
-                />
+                <DiaClima titulo="HOY" dia={ciudad.hoy} />
+                <DiaClima titulo="MAÑANA" dia={ciudad.manana} />
               </div>
             </div>
           ))}
         </div>
 
-        {/* PIE */}
         <div className="mt-3 text-center text-[10px] text-gray-500">
           Información meteorológica actualizada mediante Open-Meteo.
         </div>
+
+        {/* FORMULARIO TICKET */}
+        <section className="mt-8">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+
+            <div className="bg-blue-800 text-white px-5 py-3">
+              <h2 className="font-bold text-lg">
+                Generador de texto para Ticket
+              </h2>
+            </div>
+
+            <div className="p-5">
+
+              {/* TIPO TICKET */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Tipo de Ticket
+                </label>
+
+                <select
+                  value={tipoTicket}
+                  onChange={(e) => {
+                    setTipoTicket(e.target.value);
+                    limpiarFormulario();
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  <option value="">
+                    Seleccionar...
+                  </option>
+
+                  <option>
+                    AT: CLIENTE SIN SERVICIO
+                  </option>
+
+                  <option>
+                    ERROR DE ACTIVACIÓN EN OPTIMUS
+                  </option>
+
+                  <option>
+                    ERROR DE CAMBIO CTO/PUERTO
+                  </option>
+
+                  <option>
+                    ERROR INTERVENCIÓN ASEGURADA
+                  </option>
+
+                  <option>
+                    INS: CLIENTE SIN SERVICIO
+                  </option>
+                </select>
+              </div>
+
+              {tipoTicket && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+                    <CampoTexto
+                      label="Suscriptor"
+                      type="number"
+                      value={formulario.suscriptor}
+                      onChange={(v) =>
+                        actualizarCampo("suscriptor", v)
+                      }
+                    />
+
+                    <CampoTexto
+                      label="ID CTO"
+                      value={formulario.idCto}
+                      onChange={(v) =>
+                        actualizarCampo("idCto", v)
+                      }
+                    />
+
+                    <CampoTexto
+                      label="Potencia CTO"
+                      type="number"
+                      value={formulario.potenciaCto}
+                      onChange={(v) =>
+                        actualizarCampo("potenciaCto", v)
+                      }
+                    />
+
+                    {formularioCompleto && (
+                      <>
+                        <Selector
+                          label="Cliente navega"
+                          value={formulario.clienteNavega}
+                          opciones={["Sí", "No"]}
+                          onChange={(v) =>
+                            actualizarCampo("clienteNavega", v)
+                          }
+                        />
+
+                        <Selector
+                          label="Cliente navegó"
+                          value={formulario.clienteNavego}
+                          opciones={["Sí", "No"]}
+                          onChange={(v) =>
+                            actualizarCampo("clienteNavego", v)
+                          }
+                        />
+
+                        <Selector
+                          label="CTO con otros clientes conectados"
+                          value={formulario.otrosClientes}
+                          opciones={["Sí", "No"]}
+                          onChange={(v) =>
+                            actualizarCampo("otrosClientes", v)
+                          }
+                        />
+
+                        <Selector
+                          label="Módem conectado en domicilio"
+                          value={formulario.modemDomicilio}
+                          opciones={["Sí", "No"]}
+                          onChange={(v) =>
+                            actualizarCampo("modemDomicilio", v)
+                          }
+                        />
+
+                        <Selector
+                          label="Desconectado por un tercero"
+                          value={formulario.desconectadoTercero}
+                          opciones={[
+                            "Sí",
+                            "No aplica",
+                            "No",
+                          ]}
+                          onChange={(v) =>
+                            actualizarCampo(
+                              "desconectadoTercero",
+                              v
+                            )
+                          }
+                        />
+
+                        <Selector
+                          label="Luz PON"
+                          value={formulario.luzPon}
+                          opciones={[
+                            "Apagado",
+                            "Verde fijo",
+                            "Verde parpadea",
+                          ]}
+                          onChange={(v) =>
+                            actualizarCampo("luzPon", v)
+                          }
+                        />
+
+                        <Selector
+                          label="Luz LOS"
+                          value={formulario.luzLos}
+                          opciones={[
+                            "Apagado",
+                            "Rojo fijo",
+                            "Rojo parpadea",
+                          ]}
+                          onChange={(v) =>
+                            actualizarCampo("luzLos", v)
+                          }
+                        />
+
+                        <Selector
+                          label="Luz Internet"
+                          value={formulario.luzInternet}
+                          opciones={[
+                            "Apagado",
+                            "Verde fijo",
+                            "Verde parpadea",
+                          ]}
+                          onChange={(v) =>
+                            actualizarCampo(
+                              "luzInternet",
+                              v
+                            )
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
+
+                  {/* COMENTARIOS */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                      Comentarios
+                    </label>
+
+                    <textarea
+                      value={formulario.comentarios}
+                      onChange={(e) =>
+                        actualizarCampo(
+                          "comentarios",
+                          e.target.value
+                        )
+                      }
+                      rows={4}
+                      placeholder="Ingrese comentarios..."
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </div>
+
+                  {/* BOTONES */}
+                  <div className="mt-5 flex flex-wrap gap-3">
+
+                    <button
+                      type="button"
+                      onClick={generarTexto}
+                      className="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition"
+                    >
+                      GENERAR TEXTO
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={limpiarFormulario}
+                      className="border border-gray-300 hover:bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-semibold transition"
+                    >
+                      LIMPIAR
+                    </button>
+
+                  </div>
+                </>
+              )}
+
+              {/* RESULTADO */}
+              {textoGenerado && (
+                <div className="mt-6 border-t border-gray-200 pt-5">
+
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-gray-900">
+                      Cuerpo generado
+                    </h3>
+
+                    <button
+                      type="button"
+                      onClick={copiarTexto}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-semibold transition"
+                    >
+                      {copiado
+                        ? "COPIADO ✓"
+                        : "COPIAR TEXTO"}
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={textoGenerado}
+                    onChange={(e) =>
+                      setTextoGenerado(e.target.value)
+                    }
+                    rows={14}
+                    className="w-full border border-gray-300 bg-gray-50 rounded-lg px-3 py-3 text-sm text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+
+                </div>
+              )}
+
+            </div>
+          </div>
+        </section>
 
       </div>
     </main>
@@ -227,31 +576,27 @@ function DiaClima({
   return (
     <div className="px-2 py-2 text-center">
 
-      {/* HOY / MAÑANA */}
       <div className="font-bold text-blue-800 text-xs mb-1">
         {titulo}
       </div>
 
-      {/* ICONO */}
       <div className="text-2xl leading-none mb-1">
         {iconoClima(dia.codigo)}
       </div>
 
-      {/* ESTADO */}
       <div className="font-semibold text-gray-800 text-[11px] min-h-[28px] flex items-center justify-center leading-tight">
         {descripcionClima(dia.codigo)}
       </div>
 
-      {/* TEMPERATURA */}
       <div className="mt-1 text-sm font-bold text-gray-900">
-        {Math.round(dia.max)}° / {Math.round(dia.min)}°
+        {Math.round(dia.max)}° /{" "}
+        {Math.round(dia.min)}°
       </div>
 
       <div className="text-[9px] text-gray-500">
         Máx. / Mín.
       </div>
 
-      {/* LLUVIA Y VIENTO */}
       <div className="border-t border-gray-100 mt-2 pt-1.5 space-y-0.5 text-[10px] text-gray-700">
 
         <div>
@@ -261,11 +606,79 @@ function DiaClima({
 
         <div>
           💨 Viento{" "}
-          <strong>{Math.round(dia.viento)} km/h</strong>
+          <strong>
+            {Math.round(dia.viento)} km/h
+          </strong>
         </div>
 
       </div>
 
+    </div>
+  );
+}
+
+function CampoTexto({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (valor: string) => void;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 mb-1">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+      />
+    </div>
+  );
+}
+
+function Selector({
+  label,
+  value,
+  opciones,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  opciones: string[];
+  onChange: (valor: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-700 mb-1">
+        {label}
+      </label>
+
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+      >
+        <option value="">
+          Seleccionar...
+        </option>
+
+        {opciones.map((opcion) => (
+          <option
+            key={opcion}
+            value={opcion}
+          >
+            {opcion}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
