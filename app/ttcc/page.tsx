@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 const ciudades = [
-  { nombre: "CONCEPCIÓN", lat: -36.827, lon: -73.050 },
+  { nombre: "CONCEPCIÓN", lat: -36.827, lon: -73.05 },
   { nombre: "LOS ÁNGELES", lat: -37.469, lon: -72.353 },
-  { nombre: "TEMUCO", lat: -38.736, lon: -72.590 },
+  { nombre: "TEMUCO", lat: -38.736, lon: -72.59 },
   { nombre: "VALDIVIA", lat: -39.814, lon: -73.245 },
   { nombre: "OSORNO", lat: -40.574, lon: -73.133 },
   { nombre: "PUERTO MONTT", lat: -41.469, lon: -72.943 },
@@ -58,14 +58,17 @@ function iconoClima(codigo: number) {
       61, 63, 65, 66, 67,
       80, 81, 82,
     ].includes(codigo)
-  )
+  ) {
     return "🌧️";
+  }
 
-  if ([71, 73, 75, 77, 85, 86].includes(codigo))
+  if ([71, 73, 75, 77, 85, 86].includes(codigo)) {
     return "🌨️";
+  }
 
-  if ([95, 96, 99].includes(codigo))
+  if ([95, 96, 99].includes(codigo)) {
     return "⛈️";
+  }
 
   return "🌦️";
 }
@@ -136,17 +139,17 @@ export default function TTCC() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
+    <main className="min-h-screen bg-gray-100 px-4 py-3">
+      <div className="max-w-[1500px] mx-auto">
 
-      <div className="max-w-[1600px] mx-auto">
-
-        <div className="mb-6 flex items-center justify-between">
+        {/* CABECERA */}
+        <div className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-blue-800">
+            <h1 className="text-2xl font-bold text-blue-800">
               TSDS
             </h1>
 
-            <p className="text-gray-600">
+            <p className="text-xs text-gray-600">
               Condiciones meteorológicas
             </p>
           </div>
@@ -154,40 +157,42 @@ export default function TTCC() {
           <button
             onClick={cargarClima}
             disabled={cargando}
-            className="bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 text-white px-5 py-2 rounded-lg font-semibold"
+            className="bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-xs font-semibold transition"
           >
             {cargando ? "ACTUALIZANDO..." : "ACTUALIZAR"}
           </button>
         </div>
 
+        {/* CARGANDO */}
         {cargando && climas.length === 0 && (
-          <div className="text-center py-20 text-gray-600">
+          <div className="text-center py-16 text-sm text-gray-600">
             Consultando condiciones meteorológicas...
           </div>
         )}
 
+        {/* ERROR */}
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
+          <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-3 text-sm">
             No fue posible obtener la información meteorológica.
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-
+        {/* CIUDADES */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           {climas.map((ciudad) => (
             <div
               key={ciudad.nombre}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
             >
-
-              <div className="bg-blue-800 text-white text-center py-3">
-                <h2 className="font-bold text-lg">
+              {/* NOMBRE CIUDAD */}
+              <div className="bg-blue-800 text-white text-center py-2">
+                <h2 className="font-bold text-sm">
                   {ciudad.nombre}
                 </h2>
               </div>
 
+              {/* HOY / MAÑANA */}
               <div className="grid grid-cols-2 divide-x divide-gray-200">
-
                 <DiaClima
                   titulo="HOY"
                   dia={ciudad.hoy}
@@ -197,14 +202,13 @@ export default function TTCC() {
                   titulo="MAÑANA"
                   dia={ciudad.manana}
                 />
-
               </div>
             </div>
           ))}
-
         </div>
 
-        <div className="mt-6 text-center text-xs text-gray-500">
+        {/* PIE */}
+        <div className="mt-3 text-center text-[10px] text-gray-500">
           Información meteorológica actualizada mediante Open-Meteo.
         </div>
 
@@ -221,29 +225,34 @@ function DiaClima({
   dia: Dia;
 }) {
   return (
-    <div className="p-4 text-center">
+    <div className="px-2 py-2 text-center">
 
-      <div className="font-bold text-blue-800 mb-2">
+      {/* HOY / MAÑANA */}
+      <div className="font-bold text-blue-800 text-xs mb-1">
         {titulo}
       </div>
 
-      <div className="text-4xl mb-2">
+      {/* ICONO */}
+      <div className="text-2xl leading-none mb-1">
         {iconoClima(dia.codigo)}
       </div>
 
-      <div className="font-semibold text-gray-800 min-h-[48px]">
+      {/* ESTADO */}
+      <div className="font-semibold text-gray-800 text-[11px] min-h-[28px] flex items-center justify-center leading-tight">
         {descripcionClima(dia.codigo)}
       </div>
 
-      <div className="mt-3 text-lg font-bold text-gray-900">
+      {/* TEMPERATURA */}
+      <div className="mt-1 text-sm font-bold text-gray-900">
         {Math.round(dia.max)}° / {Math.round(dia.min)}°
       </div>
 
-      <div className="text-xs text-gray-500">
+      <div className="text-[9px] text-gray-500">
         Máx. / Mín.
       </div>
 
-      <div className="border-t border-gray-100 mt-3 pt-3 space-y-1 text-sm text-gray-700">
+      {/* LLUVIA Y VIENTO */}
+      <div className="border-t border-gray-100 mt-2 pt-1.5 space-y-0.5 text-[10px] text-gray-700">
 
         <div>
           🌧️ Lluvia{" "}
