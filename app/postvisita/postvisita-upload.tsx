@@ -56,10 +56,12 @@ export default function PostVisitaUpload() {
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState("");
   const [revisando, setRevisando] = useState(false);
+  const [enviandoPrueba, setEnviandoPrueba] = useState(false);
+  const [resultadoPrueba, setResultadoPrueba] = useState("");
 
   async function seleccionarArchivo(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    setError(""); setClientes([]); setRevisando(false);
+    setError(""); setClientes([]); setRevisando(false); setResultadoPrueba("");
     if (!file) return;
     const extension = file.name.toLowerCase().split(".").pop();
     if (!extension || !["xlsx", "xls", "csv"].includes(extension)) {
@@ -97,23 +99,49 @@ export default function PostVisitaUpload() {
 
   function actualizarCorreo(index: number, correo: string) {
     setClientes(actuales => actuales.map((fila, i) => i === index ? { ...fila, correo, seleccionado: correoValido(correo) ? fila.seleccionado : false } : fila));
+    setResultadoPrueba("");
   }
 
   function alternarSeleccion(index: number) {
     setClientes(actuales => actuales.map((fila, i) => i === index && correoValido(fila.correo) ? { ...fila, seleccionado: !fila.seleccionado } : fila));
+    setResultadoPrueba("");
   }
 
   function seleccionarValidos() {
     const validos = clientes.filter(f => correoValido(f.correo));
     const todosSeleccionados = validos.length > 0 && validos.every(f => f.seleccionado);
     setClientes(actuales => actuales.map(fila => correoValido(fila.correo) ? { ...fila, seleccionado: !todosSeleccionados } : { ...fila, seleccionado: false }));
+    setResultadoPrueba("");
   }
 
-  function limpiar() { setArchivo(null); setClientes([]); setLeyendo(false); setError(""); setRevisando(false); if (inputRef.current) inputRef.current.value = ""; }
+  async function enviarPrueba() {
+    const fila = clientes.find(f => f.seleccionado && correoValido(f.correo));
+    if (!fila || enviandoPrueba) return;
+
+    setEnviandoPrueba(true);
+    setResultadoPrueba("");
+    try {
+      const response = await fetch("/api/postvisita/prueba", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: fila.correo.trim(), cliente: fila.cliente }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "No fue posible enviar la prueba.");
+      setResultadoPrueba(`✅ Correo de prueba enviado a ${fila.correo.trim()}`);
+    } catch (err) {
+      setResultadoPrueba(`❌ ${err instanceof Error ? err.message : "No fue posible enviar la prueba."}`);
+    } finally {
+      setEnviandoPrueba(false);
+    }
+  }
+
+  function limpiar() { setArchivo(null); setClientes([]); setLeyendo(false); setError(""); setRevisando(false); setResultadoPrueba(""); if (inputRef.current) inputRef.current.value = ""; }
 
   const correosCompletos = clientes.filter(f => correoValido(f.correo)).length;
   const seleccionados = clientes.filter(f => f.seleccionado && correoValido(f.correo)).length;
   const todosValidosSeleccionados = correosCompletos > 0 && seleccionados === correosCompletos;
+  const primerSeleccionado = clientes.find(f => f.seleccionado && correoValido(f.correo));
 
   return <div className="space-y-6">
     <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
@@ -141,9 +169,10 @@ export default function PostVisitaUpload() {
         <div className="border-b border-slate-200 bg-slate-50 px-6 py-5 sm:px-8">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Confirmación previa</p>
           <h2 className="mt-1 text-2xl font-black text-slate-900">Revisar envío post visita</h2>
-          <p className="mt-2 text-sm text-slate-500">Se prepararán {seleccionados} correos. En este paso todavía no se enviará ninguno.</p>
+          <p className="mt-2 text-sm text-slate-500">Se prepararán {seleccionados} correos. La prueba enviará solamente el primero seleccionado.</p>
         </div>
         <div className="space-y-5 p-6 sm:p-8">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>Modo prueba:</strong> se enviará solo 1 correo real a <strong>{primerSeleccionado?.correo}</strong>. Los demás seleccionados no recibirán nada.</div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-black uppercase tracking-wider text-slate-500">Asunto</p>
             <p className="mt-1 font-bold text-slate-900">DIRECTV · Tu visita técnica ha finalizado – Soporte TSDS</p>
@@ -166,9 +195,10 @@ export default function PostVisitaUpload() {
             <p className="mt-5">Gracias por tu tiempo y por confiar en nuestro equipo.</p>
             <p className="mt-4 font-bold text-slate-900">Equipo TSDS<br/>Agente Autorizado de DIRECTV<br/>Soporte post visita técnica<br/>www.tsds.cl</p>
           </div>
+          {resultadoPrueba && <div className={`rounded-xl p-4 text-sm font-bold ${resultadoPrueba.startsWith("✅") ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{resultadoPrueba}</div>}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button type="button" onClick={() => setRevisando(false)} className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50">VOLVER</button>
-            <button type="button" disabled className="rounded-xl bg-slate-300 px-5 py-3 font-black text-white">ENVÍO AÚN NO HABILITADO</button>
+            <button type="button" onClick={() => setRevisando(false)} disabled={enviandoPrueba} className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">VOLVER</button>
+            <button type="button" onClick={enviarPrueba} disabled={!primerSeleccionado || enviandoPrueba} className="rounded-xl bg-amber-500 px-5 py-3 font-black text-white hover:bg-amber-600 disabled:bg-slate-300">{enviandoPrueba ? "ENVIANDO PRUEBA…" : "ENVIAR 1 CORREO DE PRUEBA"}</button>
           </div>
         </div>
       </div>
