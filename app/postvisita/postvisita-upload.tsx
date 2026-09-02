@@ -60,16 +60,11 @@ function fechaEsHoy(value: unknown) {
   }
 
   const texto = String(value ?? "").trim().replace(/^\ufeff/, "");
-
   let match = texto.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})(?:\s|$)/);
-  if (match) {
-    return Number(match[1]) === hoy.dia && Number(match[2]) === hoy.mes && Number(match[3]) === hoy.anio;
-  }
+  if (match) return Number(match[1]) === hoy.dia && Number(match[2]) === hoy.mes && Number(match[3]) === hoy.anio;
 
   match = texto.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:\s|T|$)/);
-  if (match) {
-    return Number(match[3]) === hoy.dia && Number(match[2]) === hoy.mes && Number(match[1]) === hoy.anio;
-  }
+  if (match) return Number(match[3]) === hoy.dia && Number(match[2]) === hoy.mes && Number(match[1]) === hoy.anio;
 
   return false;
 }
@@ -97,7 +92,79 @@ function cargarXlsx() {
   });
 }
 
+function parsearSeparado(texto: string, separador: string): string[][] {
+  const filas: string[][] = [];
+  let fila: string[] = [];
+  let campo = "";
+  let entreComillas = false;
+
+  for (let i = 0; i < texto.length; i += 1) {
+    const c = texto[i];
+
+    if (c === '"') {
+      if (entreComillas && texto[i + 1] === '"') {
+        campo += '"';
+        i += 1;
+      } else {
+        entreComillas = !entreComillas;
+      }
+      continue;
+    }
+
+    if (!entreComillas && c === separador) {
+      fila.push(campo);
+      campo = "";
+      continue;
+    }
+
+    if (!entreComillas && (c === "\n" || c === "\r")) {
+      if (c === "\r" && texto[i + 1] === "\n") i += 1;
+      fila.push(campo);
+      campo = "";
+      if (fila.some(valor => valor !== "")) filas.push(fila);
+      fila = [];
+      continue;
+    }
+
+    campo += c;
+  }
+
+  if (campo !== "" || fila.length) {
+    fila.push(campo);
+    if (fila.some(valor => valor !== "")) filas.push(fila);
+  }
+
+  return filas;
+}
+
+async function leerCsvDirectv(file: File): Promise<unknown[][]> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let texto = "";
+
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    texto = new TextDecoder("utf-16le").decode(bytes.subarray(2));
+  } else if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    const cuerpo = bytes.subarray(2);
+    const invertido = new Uint8Array(cuerpo.length);
+    for (let i = 0; i + 1 < cuerpo.length; i += 2) {
+      invertido[i] = cuerpo[i + 1];
+      invertido[i + 1] = cuerpo[i];
+    }
+    texto = new TextDecoder("utf-16le").decode(invertido);
+  } else {
+    texto = new TextDecoder("utf-8").decode(bytes).replace(/^\ufeff/, "");
+  }
+
+  const primeraLinea = texto.split(/\r?\n/, 1)[0] ?? "";
+  const separador = primeraLinea.includes("\t") ? "\t" : ",";
+  return parsearSeparado(texto, separador);
+}
+
 async function leerFilas(file: File): Promise<unknown[][]> {
+  const extension = file.name.toLowerCase().split(".").pop();
+  if (extension === "csv") return leerCsvDirectv(file);
+
   const XLSX = await cargarXlsx();
   const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
   const primeraHoja = workbook.SheetNames[0];
