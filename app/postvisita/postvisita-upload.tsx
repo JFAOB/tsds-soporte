@@ -56,12 +56,14 @@ export default function PostVisitaUpload() {
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState("");
   const [revisando, setRevisando] = useState(false);
+  const [confirmandoFinal, setConfirmandoFinal] = useState(false);
+  const [confirmacionMarcada, setConfirmacionMarcada] = useState(false);
   const [enviandoPrueba, setEnviandoPrueba] = useState(false);
   const [resultadoPrueba, setResultadoPrueba] = useState("");
 
   async function seleccionarArchivo(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    setError(""); setClientes([]); setRevisando(false); setResultadoPrueba("");
+    setError(""); setClientes([]); setRevisando(false); setConfirmandoFinal(false); setConfirmacionMarcada(false); setResultadoPrueba("");
     if (!file) return;
     const extension = file.name.toLowerCase().split(".").pop();
     if (!extension || !["xlsx", "xls", "csv"].includes(extension)) {
@@ -100,11 +102,13 @@ export default function PostVisitaUpload() {
   function actualizarCorreo(index: number, correo: string) {
     setClientes(actuales => actuales.map((fila, i) => i === index ? { ...fila, correo, seleccionado: correoValido(correo) ? fila.seleccionado : false } : fila));
     setResultadoPrueba("");
+    setConfirmacionMarcada(false);
   }
 
   function alternarSeleccion(index: number) {
     setClientes(actuales => actuales.map((fila, i) => i === index && correoValido(fila.correo) ? { ...fila, seleccionado: !fila.seleccionado } : fila));
     setResultadoPrueba("");
+    setConfirmacionMarcada(false);
   }
 
   function seleccionarValidos() {
@@ -112,6 +116,7 @@ export default function PostVisitaUpload() {
     const todosSeleccionados = validos.length > 0 && validos.every(f => f.seleccionado);
     setClientes(actuales => actuales.map(fila => correoValido(fila.correo) ? { ...fila, seleccionado: !todosSeleccionados } : { ...fila, seleccionado: false }));
     setResultadoPrueba("");
+    setConfirmacionMarcada(false);
   }
 
   async function enviarPrueba() {
@@ -136,12 +141,22 @@ export default function PostVisitaUpload() {
     }
   }
 
-  function limpiar() { setArchivo(null); setClientes([]); setLeyendo(false); setError(""); setRevisando(false); setResultadoPrueba(""); if (inputRef.current) inputRef.current.value = ""; }
+  function abrirConfirmacionFinal() {
+    setConfirmacionMarcada(false);
+    setRevisando(false);
+    setConfirmandoFinal(true);
+  }
+
+  function limpiar() {
+    setArchivo(null); setClientes([]); setLeyendo(false); setError(""); setRevisando(false); setConfirmandoFinal(false); setConfirmacionMarcada(false); setResultadoPrueba("");
+    if (inputRef.current) inputRef.current.value = "";
+  }
 
   const correosCompletos = clientes.filter(f => correoValido(f.correo)).length;
   const seleccionados = clientes.filter(f => f.seleccionado && correoValido(f.correo)).length;
   const todosValidosSeleccionados = correosCompletos > 0 && seleccionados === correosCompletos;
   const primerSeleccionado = clientes.find(f => f.seleccionado && correoValido(f.correo));
+  const seleccionadosFilas = clientes.filter(f => f.seleccionado && correoValido(f.correo));
 
   return <div className="space-y-6">
     <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
@@ -169,10 +184,10 @@ export default function PostVisitaUpload() {
         <div className="border-b border-slate-200 bg-slate-50 px-6 py-5 sm:px-8">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Confirmación previa</p>
           <h2 className="mt-1 text-2xl font-black text-slate-900">Revisar envío post visita</h2>
-          <p className="mt-2 text-sm text-slate-500">Se prepararán {seleccionados} correos. La prueba enviará solamente el primero seleccionado.</p>
+          <p className="mt-2 text-sm text-slate-500">Revisa el contenido antes de pasar a la confirmación final de {seleccionados} correos.</p>
         </div>
         <div className="space-y-5 p-6 sm:p-8">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>Modo prueba:</strong> se enviará solo 1 correo real a <strong>{primerSeleccionado?.correo}</strong>. Los demás seleccionados no recibirán nada.</div>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>Prueba disponible:</strong> puedes seguir enviando solo 1 correo real a <strong>{primerSeleccionado?.correo}</strong> antes de continuar.</div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-black uppercase tracking-wider text-slate-500">Asunto</p>
             <p className="mt-1 font-bold text-slate-900">DIRECTV · Tu visita técnica ha finalizado – Soporte TSDS</p>
@@ -199,6 +214,39 @@ export default function PostVisitaUpload() {
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setRevisando(false)} disabled={enviandoPrueba} className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">VOLVER</button>
             <button type="button" onClick={enviarPrueba} disabled={!primerSeleccionado || enviandoPrueba} className="rounded-xl bg-amber-500 px-5 py-3 font-black text-white hover:bg-amber-600 disabled:bg-slate-300">{enviandoPrueba ? "ENVIANDO PRUEBA…" : "ENVIAR 1 CORREO DE PRUEBA"}</button>
+            <button type="button" onClick={abrirConfirmacionFinal} disabled={seleccionados === 0 || enviandoPrueba} className="rounded-xl bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800 disabled:bg-slate-300">CONTINUAR A CONFIRMACIÓN FINAL</button>
+          </div>
+        </div>
+      </div>
+    </div>}
+
+    {confirmandoFinal && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4" onClick={() => setConfirmandoFinal(false)}>
+      <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="rounded-t-3xl bg-red-600 px-6 py-5 text-white sm:px-8">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-red-100">Última confirmación</p>
+          <h2 className="mt-1 text-2xl font-black">Envío masivo post visita</h2>
+        </div>
+        <div className="space-y-5 p-6 sm:p-8">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900">
+            <p className="text-lg font-black">Se preparan {seleccionados} correos reales.</p>
+            <p className="mt-2 text-sm">Cuando habilitemos el último botón, esta acción enviará un correo independiente a cada cliente seleccionado.</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-xs font-black uppercase tracking-wider text-slate-500">Resumen</p>
+            <p className="mt-2 text-sm text-slate-700"><strong>Asunto:</strong> DIRECTV · Tu visita técnica ha finalizado – Soporte TSDS</p>
+            <p className="mt-1 text-sm text-slate-700"><strong>Remitente:</strong> TSDS Soporte &lt;soporte@tsds.cl&gt;</p>
+            <p className="mt-1 text-sm text-slate-700"><strong>Destinatarios:</strong> {seleccionados}</p>
+          </div>
+          <div className="max-h-44 overflow-auto rounded-2xl border border-slate-200">
+            <table className="w-full text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Nº cliente</th><th className="px-4 py-3">Correo</th></tr></thead><tbody className="divide-y divide-slate-100">{seleccionadosFilas.map((fila) => <tr key={fila.cliente}><td className="px-4 py-3 font-bold text-slate-800">{fila.cliente}</td><td className="px-4 py-3 text-slate-600">{fila.correo}</td></tr>)}</tbody></table>
+          </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4">
+            <input type="checkbox" checked={confirmacionMarcada} onChange={(e) => setConfirmacionMarcada(e.target.checked)} className="mt-1 h-5 w-5 accent-red-600" />
+            <span className="text-sm leading-6 text-slate-700">Confirmo que revisé los destinatarios y que deseo preparar el envío de <strong>{seleccionados} correos</strong>.</span>
+          </label>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => { setConfirmandoFinal(false); setRevisando(true); }} className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50">VOLVER A REVISAR</button>
+            <button type="button" disabled className={`rounded-xl px-5 py-3 font-black text-white ${confirmacionMarcada ? "bg-slate-400" : "bg-slate-300"}`}>ENVÍO MASIVO AÚN BLOQUEADO</button>
           </div>
         </div>
       </div>
