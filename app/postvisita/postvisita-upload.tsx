@@ -39,8 +39,16 @@ function fechaEsHoy(value: unknown) {
   const texto = String(value ?? "").trim();
   const match = texto.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
   if (!match) return false;
-  const ahora = new Date();
-  return Number(match[1]) === ahora.getDate() && Number(match[2]) === ahora.getMonth() + 1 && Number(match[3]) === ahora.getFullYear();
+
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const hoy = Object.fromEntries(partes.map(parte => [parte.type, parte.value]));
+  return Number(match[1]) === Number(hoy.day) && Number(match[2]) === Number(hoy.month) && Number(match[3]) === Number(hoy.year);
 }
 
 function correoValido(correo: string) {
