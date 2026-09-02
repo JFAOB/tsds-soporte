@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 type ArchivoInfo = { nombre: string; tamano: string };
 type ClienteFila = { cliente: string; correo: string; seleccionado: boolean };
+type ResumenFiltro = { finalizadosHoy: number; soporteInventario: number; duplicados: number };
 type XLSXApi = {
   read: (data: ArrayBuffer, options?: Record<string, unknown>) => { SheetNames: string[]; Sheets: Record<string, unknown> };
   utils: { sheet_to_json: (sheet: unknown, options?: Record<string, unknown>) => unknown[][] };
@@ -24,6 +25,22 @@ function normalizar(value: unknown) {
 function esColumnaCliente(value: unknown) {
   const texto = normalizar(value);
   return ["ndecliente", "numerodecliente", "nrodecliente", "numdecliente", "numerocliente", "nrocliente", "numcliente", "cliente", "suscriptor", "numerosuscriptor", "nrosuscriptor", "numsuscriptor", "idsuscriptor", "subscriber", "subscriberid"].includes(texto);
+}
+
+function esColumnaFechaFinalizacion(value: unknown) {
+  return ["fechadefinalizacion", "fechafinalizacion"].includes(normalizar(value));
+}
+
+function esColumnaServicio(value: unknown) {
+  return normalizar(value) === "servicio";
+}
+
+function fechaEsHoy(value: unknown) {
+  const texto = String(value ?? "").trim();
+  const match = texto.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if (!match) return false;
+  const ahora = new Date();
+  return Number(match[1]) === ahora.getDate() && Number(match[2]) === ahora.getMonth() + 1 && Number(match[3]) === ahora.getFullYear();
 }
 
 function correoValido(correo: string) {
@@ -53,6 +70,7 @@ export default function PostVisitaUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [archivo, setArchivo] = useState<ArchivoInfo | null>(null);
   const [clientes, setClientes] = useState<ClienteFila[]>([]);
+  const [resumenFiltro, setResumenFiltro] = useState<ResumenFiltro | null>(null);
   const [leyendo, setLeyendo] = useState(false);
   const [error, setError] = useState("");
   const [revisando, setRevisando] = useState(false);
@@ -65,7 +83,7 @@ export default function PostVisitaUpload() {
 
   async function seleccionarArchivo(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    setError(""); setClientes([]); setRevisando(false); setConfirmandoFinal(false); setConfirmacionMarcada(false); setResultadoPrueba(""); setResultadoMasivo("");
+    setError(""); setClientes([]); setResumenFiltro(null); setRevisando(false); setConfirmandoFinal(false); setConfirmacionMarcada(false); setResultadoPrueba(""); setResultadoMasivo("");
     if (!file) return;
     const extension = file.name.toLowerCase().split(".").pop();
     if (!extension || !["xlsx", "xls", "csv"].includes(extension)) {
@@ -78,23 +96,43 @@ export default function PostVisitaUpload() {
       const primeraHoja = workbook.SheetNames[0];
       if (!primeraHoja) throw new Error("El archivo no contiene hojas.");
       const filas = XLSX.utils.sheet_to_json(workbook.Sheets[primeraHoja], { header: 1, defval: "", raw: false });
-      let filaCabecera = -1; let columnaCliente = -1;
+      let filaCabecera = -1; let columnaCliente = -1; let columnaFecha = -1; let columnaServicio = -1;
       for (let i = 0; i < Math.min(filas.length, 25); i += 1) {
         const fila = Array.isArray(filas[i]) ? filas[i] : [];
-        const indice = fila.findIndex(esColumnaCliente);
-        if (indice >= 0) { filaCabecera = i; columnaCliente = indice; break; }
+        const indiceCliente = fila.findIndex(esColumnaCliente);
+        const indiceFecha = fila.findIndex(esColumnaFechaFinalizacion);
+        const indiceServicio = fila.findIndex(esColumnaServicio);
+        if (indiceCliente >= 0 && indiceFecha >= 0 && indiceServicio >= 0) {
+          filaCabecera = i; columnaCliente = indiceCliente; columnaFecha = indiceFecha; columnaServicio = indiceServicio; break;
+        }
       }
       if (filaCabecera < 0 || columnaCliente < 0) throw new Error("No encontré la columna Nº de cliente en el archivo.");
-      const encontrados: ClienteFila[] = []; const repetidos = new Set<string>();
+      if (columnaFecha < 0) throw new Error("No encontré la columna Fecha de finalización en el archivo.");
+      if (columnaServicio < 0) throw new Error("No encontré la columna Servicio en el archivo.");
+
+      const encontrados: ClienteFila[] = [];
+      const repetidos = new Set<string>();
+      let finalizadosHoy = 0; let soporteInventario = 0; let duplicados = 0;
+
       for (let i = filaCabecera + 1; i < filas.length; i += 1) {
         const fila = Array.isArray(filas[i]) ? filas[i] : [];
+        if (!fechaEsHoy(fila[columnaFecha])) continue;
+        finalizadosHoy += 1;
+
+        const servicio = normalizar(fila[columnaServicio]);
+        if (servicio.includes("soporteinventario")) { soporteInventario += 1; continue; }
+
         const valor = String(fila[columnaCliente] ?? "").trim();
         if (!valor) continue;
         const limpio = valor.replace(/\.0$/, "").replace(/\s+/g, "");
-        if (!limpio || repetidos.has(limpio)) continue;
-        repetidos.add(limpio); encontrados.push({ cliente: limpio, correo: "", seleccionado: false });
+        if (!limpio) continue;
+        if (repetidos.has(limpio)) { duplicados += 1; continue; }
+        repetidos.add(limpio);
+        encontrados.push({ cliente: limpio, correo: "", seleccionado: false });
       }
-      if (!encontrados.length) throw new Error("Encontré la columna Nº de cliente, pero no contiene datos.");
+
+      setResumenFiltro({ finalizadosHoy, soporteInventario, duplicados });
+      if (!encontrados.length) throw new Error("No hay clientes nuevos para mostrar con fecha de finalización de hoy después de aplicar los filtros.");
       setClientes(encontrados);
     } catch (err) {
       setClientes([]); setError(err instanceof Error ? err.message : "No fue posible leer el archivo.");
@@ -154,7 +192,7 @@ export default function PostVisitaUpload() {
   }
 
   function limpiar() {
-    setArchivo(null); setClientes([]); setLeyendo(false); setError(""); setRevisando(false); setConfirmandoFinal(false); setConfirmacionMarcada(false); setResultadoPrueba(""); setResultadoMasivo("");
+    setArchivo(null); setClientes([]); setResumenFiltro(null); setLeyendo(false); setError(""); setRevisando(false); setConfirmandoFinal(false); setConfirmacionMarcada(false); setResultadoPrueba(""); setResultadoMasivo("");
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -167,16 +205,17 @@ export default function PostVisitaUpload() {
   return <div className="space-y-6">
     <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
       <div className="text-4xl">📂</div><h2 className="mt-3 text-xl font-black text-slate-800">Carga de clientes</h2>
-      <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">Selecciona el archivo con las visitas finalizadas. Buscaremos automáticamente la columna Nº de cliente.</p>
+      <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">Carga el archivo acumulado del mes. Mostraremos solo los clientes con Fecha de finalización de hoy, excluyendo Soporte Inventario y duplicados por Nº de cliente.</p>
       <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" onChange={seleccionarArchivo} className="hidden" />
-      <button type="button" onClick={() => inputRef.current?.click()} disabled={leyendo} className="mt-6 rounded-xl bg-blue-700 px-7 py-3 font-bold text-white transition hover:bg-blue-800 disabled:bg-slate-400">{leyendo ? "LEYENDO EXCEL…" : "📂 CARGAR EXCEL"}</button>
+      <button type="button" onClick={() => inputRef.current?.click()} disabled={leyendo} className="mt-6 rounded-xl bg-blue-700 px-7 py-3 font-bold text-white transition hover:bg-blue-800 disabled:bg-slate-400">{leyendo ? "FILTRANDO ARCHIVO…" : "📂 CARGAR EXCEL"}</button>
       {archivo && <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-emerald-700">Archivo cargado</p><p className="mt-1 break-all font-bold text-slate-800">{archivo.nombre}</p><p className="mt-1 text-sm text-slate-500">{archivo.tamano}</p></div><button type="button" onClick={limpiar} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Quitar</button></div></div>}
+      {resumenFiltro && <div className="mx-auto mt-4 grid max-w-3xl gap-3 text-left sm:grid-cols-3"><div className="rounded-xl border border-blue-200 bg-blue-50 p-3"><p className="text-xs font-black uppercase text-blue-700">Finalizados hoy</p><p className="mt-1 text-2xl font-black text-blue-900">{resumenFiltro.finalizadosHoy}</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-3"><p className="text-xs font-black uppercase text-amber-700">Soporte Inventario excluido</p><p className="mt-1 text-2xl font-black text-amber-900">{resumenFiltro.soporteInventario}</p></div><div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-black uppercase text-slate-600">Duplicados eliminados</p><p className="mt-1 text-2xl font-black text-slate-900">{resumenFiltro.duplicados}</p></div></div>}
       {error && <p className="mx-auto mt-5 max-w-xl rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
     </div>
 
     {clientes.length > 0 && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div><p className="text-xs font-black uppercase tracking-wider text-blue-700">Lectura correcta</p><h3 className="text-lg font-black text-slate-800">{clientes.length} clientes detectados</h3><p className="mt-1 text-sm text-slate-500">{correosCompletos} correos válidos · {seleccionados} seleccionados</p></div>
+        <div><p className="text-xs font-black uppercase tracking-wider text-blue-700">Filtro aplicado</p><h3 className="text-lg font-black text-slate-800">{clientes.length} clientes únicos para hoy</h3><p className="mt-1 text-sm text-slate-500">{correosCompletos} correos válidos · {seleccionados} seleccionados</p></div>
         <div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={seleccionarValidos} disabled={correosCompletos === 0} className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 hover:bg-blue-50 disabled:border-slate-200 disabled:text-slate-400">{todosValidosSeleccionados ? "DESMARCAR TODOS" : "SELECCIONAR CORREOS VÁLIDOS"}</button><button type="button" onClick={() => setRevisando(true)} disabled={seleccionados === 0} className="rounded-xl bg-blue-700 px-5 py-2 text-sm font-black text-white hover:bg-blue-800 disabled:bg-slate-300">REVISAR ENVÍO ({seleccionados})</button></div>
       </div>
       <div className="max-h-[520px] overflow-auto"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-white text-xs uppercase text-slate-500 shadow-sm"><tr><th className="px-5 py-3 text-center">Enviar</th><th className="px-5 py-3">#</th><th className="px-5 py-3">Nº de cliente</th><th className="px-5 py-3">Correo</th></tr></thead><tbody className="divide-y divide-slate-100">{clientes.map((fila, index) => { const tieneCorreo = fila.correo.trim().length > 0; const esValido = correoValido(fila.correo); return <tr key={`${fila.cliente}-${index}`} className={fila.seleccionado ? "bg-blue-50/60" : ""}><td className="px-5 py-3 text-center"><input type="checkbox" checked={fila.seleccionado} disabled={!esValido} onChange={() => alternarSeleccion(index)} className="h-4 w-4 accent-blue-700 disabled:opacity-30" /></td><td className="px-5 py-3 text-slate-400">{index + 1}</td><td className="px-5 py-3 font-bold text-slate-800">{fila.cliente}</td><td className="px-5 py-3"><div className="flex items-center gap-2"><input type="email" value={fila.correo} onChange={(e) => actualizarCorreo(index, e.target.value)} placeholder="cliente@correo.cl" className={`w-full min-w-[260px] rounded-lg border px-3 py-2 outline-none transition ${!tieneCorreo ? "border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" : esValido ? "border-emerald-400 bg-emerald-50" : "border-red-400 bg-red-50"}`} />{tieneCorreo && <span className={`text-base ${esValido ? "text-emerald-600" : "text-red-600"}`}>{esValido ? "✓" : "✕"}</span>}</div></td></tr> })}</tbody></table></div>
