@@ -239,9 +239,22 @@ export default function PostVisitaUpload() {
         encontrados.push({ cliente: limpio, correo: "", seleccionado: false });
       }
 
+      const responseEnviados = await fetch("/api/postvisita/enviados", { cache: "no-store" });
+      const dataEnviados = await responseEnviados.json().catch(() => ({}));
+      if (!responseEnviados.ok) {
+        throw new Error(typeof dataEnviados.error === "string" ? dataEnviados.error : "No fue posible consultar los clientes enviados hoy.");
+      }
+
+      const enviadosHoy = new Set<string>(
+        Array.isArray(dataEnviados.clientes)
+          ? dataEnviados.clientes.map((cliente: unknown) => String(cliente ?? "").trim()).filter(Boolean)
+          : [],
+      );
+      const pendientes = encontrados.filter((fila) => !enviadosHoy.has(fila.cliente));
+
       setResumenFiltro({ finalizadosHoy, soporteInventario, duplicados });
-      if (!encontrados.length) throw new Error("No hay clientes para mostrar con fecha de finalización de hoy después de aplicar los filtros.");
-      setClientes(encontrados);
+      if (!pendientes.length) throw new Error("No hay clientes pendientes para hoy. Los clientes encontrados ya fueron enviados o quedaron excluidos por los filtros.");
+      setClientes(pendientes);
     } catch (err) {
       setClientes([]);
       setError(err instanceof Error ? err.message : "No fue posible leer el archivo.");
