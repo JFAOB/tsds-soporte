@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { validSession, ventaCookieName } from "@/lib/venta-auth";
 import PostVisitaLogin from "./postvisita-login";
+import PostVisitaUpload from "./postvisita-upload";
 
 export default async function PostVisitaPage() {
   const cookieStore = await cookies();
@@ -22,20 +23,7 @@ export default async function PostVisitaPage() {
         </header>
 
         <div className="p-6 sm:p-9">
-          <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
-            <div className="text-4xl">📂</div>
-            <h2 className="mt-3 text-xl font-black text-slate-800">Carga de clientes</h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">
-              En el siguiente paso habilitaremos la carga del Excel para obtener automáticamente los suscriptores atendidos.
-            </p>
-            <button
-              type="button"
-              disabled
-              className="mt-6 rounded-xl bg-slate-300 px-7 py-3 font-bold text-slate-600"
-            >
-              CARGAR EXCEL — PRÓXIMO PASO
-            </button>
-          </div>
+          <PostVisitaUpload />
         </div>
       </section>
     </main>
