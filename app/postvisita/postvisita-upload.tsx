@@ -146,7 +146,7 @@ export default function PostVisitaUpload() {
         <div className="space-y-5 p-6 sm:p-8">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-black uppercase tracking-wider text-slate-500">Asunto</p>
-            <p className="mt-1 font-bold text-slate-900">Tu visita técnica ha finalizado – Soporte TSDS</p>
+            <p className="mt-1 font-bold text-slate-900">DIRECTV · Tu visita técnica ha finalizado – Soporte TSDS</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-[15px] leading-7 text-slate-700">
             <p>Hola:</p>
