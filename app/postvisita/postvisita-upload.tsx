@@ -150,7 +150,8 @@ export default function PostVisitaUpload() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-[15px] leading-7 text-slate-700">
             <p>Hola:</p>
-            <p className="mt-4">Te informamos que la visita técnica realizada en tu domicilio ha sido finalizada correctamente.</p>
+            <p className="mt-4">Te informamos que la visita técnica de DIRECTV realizada en tu domicilio ha sido finalizada correctamente.</p>
+            <p className="mt-3">TSDS es <strong className="text-slate-900">Agente Autorizado de DIRECTV</strong> y queremos seguir acompañándote después de la atención realizada.</p>
             <p className="mt-5 font-black text-slate-900">📞 Es posible que te llamen para evaluar la atención</p>
             <p className="mt-2">Durante las próximas 48 horas podrías recibir una llamada para conocer tu experiencia con la visita técnica.</p>
             <p className="mt-3">Al momento de evaluar, te invitamos a considerar especialmente la atención, disposición y trabajo realizado por el técnico que te visitó.</p>
@@ -163,7 +164,7 @@ export default function PostVisitaUpload() {
             <p className="mt-2">Selecciona “PROBLEMAS CON MI SERVICIO” y cuéntanos qué ocurre. Nuestro equipo revisará tu caso e intentará ayudarte lo antes posible.</p>
             <p className="mt-3">Este canal está disponible para entregarte una atención más rápida ante inconvenientes posteriores a tu visita.</p>
             <p className="mt-5">Gracias por tu tiempo y por confiar en nuestro equipo.</p>
-            <p className="mt-4 font-bold text-slate-900">Equipo TSDS<br/>Soporte post visita técnica<br/>www.tsds.cl</p>
+            <p className="mt-4 font-bold text-slate-900">Equipo TSDS<br/>Agente Autorizado de DIRECTV<br/>Soporte post visita técnica<br/>www.tsds.cl</p>
           </div>
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setRevisando(false)} className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 hover:bg-slate-50">VOLVER</button>
