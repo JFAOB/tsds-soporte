@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validSession, ventaCookieName } from "@/lib/venta-auth";
 
-type Destinatario = { email?: unknown; cliente?: unknown };
+type Destinatario = { email?: unknown; cliente?: unknown; fechaVisita?: unknown };
 type Solicitud = { destinatarios?: unknown };
 
 function texto(value: unknown, maximo: number) {
@@ -12,17 +12,6 @@ function texto(value: unknown, maximo: number) {
 
 function emailValido(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function fechaChileHoy() {
-  const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Santiago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const mapa = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
-  return `${mapa.year}-${mapa.month}-${mapa.day}`;
 }
 
 function htmlCorreo(cliente: string) {
@@ -45,23 +34,35 @@ export async function POST(request: Request) {
   if (body.destinatarios.length < 1 || body.destinatarios.length > 100) return NextResponse.json({ error: "El envío debe contener entre 1 y 100 destinatarios." }, { status: 400 });
 
   const vistos = new Set<string>();
-  const destinatarios = (body.destinatarios as Destinatario[]).map((item) => ({ email: texto(item.email, 254).toLowerCase(), cliente: texto(item.cliente, 20) }));
+  const destinatarios = (body.destinatarios as Destinatario[]).map((item) => ({
+    email: texto(item.email, 254).toLowerCase(),
+    cliente: texto(item.cliente, 20),
+    fechaVisita: texto(item.fechaVisita, 10),
+  }));
+
   for (const item of destinatarios) {
-    if (!emailValido(item.email) || !/^\d{5,15}$/.test(item.cliente)) return NextResponse.json({ error: "Hay un cliente o correo inválido." }, { status: 400 });
-    if (vistos.has(item.cliente)) return NextResponse.json({ error: `El cliente ${item.cliente} está repetido en el lote.` }, { status: 400 });
-    vistos.add(item.cliente);
+    if (!emailValido(item.email) || !/^\d{5,15}$/.test(item.cliente) || !/^\d{4}-\d{2}-\d{2}$/.test(item.fechaVisita)) {
+      return NextResponse.json({ error: "Hay un cliente, correo o fecha de visita inválida." }, { status: 400 });
+    }
+    const clave = `${item.cliente}|${item.fechaVisita}`;
+    if (vistos.has(clave)) return NextResponse.json({ error: `El cliente ${item.cliente} está repetido para la misma visita.` }, { status: 400 });
+    vistos.add(clave);
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const fecha = fechaChileHoy();
+  const fechas = Array.from(new Set(destinatarios.map((item) => item.fechaVisita)));
+  const clientes = Array.from(new Set(destinatarios.map((item) => item.cliente)));
   const { data: yaEnviados, error: errorConsulta } = await supabase
     .from("postvisita_enviados")
-    .select("cliente")
-    .eq("fecha_envio", fecha)
-    .in("cliente", destinatarios.map((item) => item.cliente));
+    .select("cliente,fecha_envio")
+    .in("fecha_envio", fechas)
+    .in("cliente", clientes);
 
   if (errorConsulta) return NextResponse.json({ error: "No fue posible verificar los envíos anteriores." }, { status: 500 });
-  if ((yaEnviados ?? []).length > 0) return NextResponse.json({ error: "Uno o más clientes ya recibieron el correo post visita hoy. Recarga el archivo para actualizar la lista." }, { status: 409 });
+  const clavesEnviadas = new Set((yaEnviados ?? []).map((fila) => `${String(fila.cliente ?? "").trim()}|${String(fila.fecha_envio ?? "").trim()}`));
+  if (destinatarios.some((item) => clavesEnviadas.has(`${item.cliente}|${item.fechaVisita}`))) {
+    return NextResponse.json({ error: "Uno o más clientes ya recibieron el correo para esa visita. Recarga el archivo para actualizar la lista." }, { status: 409 });
+  }
 
   const correos = destinatarios.map((item) => ({ from: "TSDS Soporte <soporte@tsds.cl>", to: [item.email], subject: "DIRECTV · Tu visita técnica ha finalizado – Soporte TSDS", html: htmlCorreo(item.cliente) }));
   const response = await fetch("https://api.resend.com/emails/batch", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(correos) });
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   const { error: errorRegistro } = await supabase.from("postvisita_enviados").insert(
-    destinatarios.map((item) => ({ cliente: item.cliente, fecha_envio: fecha })),
+    destinatarios.map((item) => ({ cliente: item.cliente, fecha_envio: item.fechaVisita })),
   );
 
   if (errorRegistro) {
