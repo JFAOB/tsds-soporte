@@ -6,13 +6,13 @@ type SolicitudSoporte = {
   comuna?: unknown;
   telefono?: unknown;
   problema?: unknown;
+  comentarios?: unknown;
   empresa?: unknown;
 };
 
 const problemasPermitidos = new Set([
   "Sin servicio de Internet",
   "Sin servicio de Televisión",
-  "Otros",
 ]);
 
 function texto(value: unknown, maximo: number) {
@@ -26,6 +26,29 @@ function escaparHtml(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function rutChilenoValido(value: string) {
+  const rut = value.replace(/[^0-9kK]/g, "").toUpperCase();
+
+  if (!/^\d{7,8}[0-9K]$/.test(rut)) {
+    return false;
+  }
+
+  const cuerpo = rut.slice(0, -1);
+  const digitoVerificador = rut.slice(-1);
+  let suma = 0;
+  let multiplicador = 2;
+
+  for (let indice = cuerpo.length - 1; indice >= 0; indice -= 1) {
+    suma += Number(cuerpo[indice]) * multiplicador;
+    multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+  }
+
+  const resultado = 11 - (suma % 11);
+  const esperado = resultado === 11 ? "0" : resultado === 10 ? "K" : String(resultado);
+
+  return digitoVerificador === esperado;
 }
 
 export async function POST(request: Request) {
@@ -58,12 +81,13 @@ export async function POST(request: Request) {
   const comuna = texto(body.comuna, 100);
   const telefono = texto(body.telefono, 30);
   const problema = texto(body.problema, 100);
+  const comentarios = texto(body.comentarios, 1000);
 
   if (
     !nombre ||
-    !rut ||
+    !rutChilenoValido(rut) ||
     !comuna ||
-    !telefono ||
+    !/^\d{7,15}$/.test(telefono) ||
     !problemasPermitidos.has(problema)
   ) {
     return NextResponse.json(
@@ -78,6 +102,7 @@ export async function POST(request: Request) {
     ["Comuna", comuna],
     ["Teléfono", telefono],
     ["Problemática", problema],
+    ["Comentarios", comentarios || "Sin comentarios"],
   ];
 
   const html = `
@@ -90,7 +115,7 @@ export async function POST(request: Request) {
           .map(
             ([etiqueta, valor]) => `
               <p style="margin:0 0 16px">
-                <strong>${etiqueta}:</strong><br>${escaparHtml(valor)}
+                <strong>${etiqueta}:</strong><br><span style="white-space:pre-wrap">${escaparHtml(valor)}</span>
               </p>`,
           )
           .join("")}

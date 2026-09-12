@@ -3,6 +3,42 @@
 import { useState } from "react";
 import Image from "next/image";
 
+function limpiarRut(value: string) {
+  return value.replace(/[^0-9kK]/g, "").toUpperCase();
+}
+
+function rutChilenoValido(value: string) {
+  const rut = limpiarRut(value);
+
+  if (!/^\d{7,8}[0-9K]$/.test(rut)) {
+    return false;
+  }
+
+  const cuerpo = rut.slice(0, -1);
+  const digitoVerificador = rut.slice(-1);
+  let suma = 0;
+  let multiplicador = 2;
+
+  for (let indice = cuerpo.length - 1; indice >= 0; indice -= 1) {
+    suma += Number(cuerpo[indice]) * multiplicador;
+    multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+  }
+
+  const resultado = 11 - (suma % 11);
+  const esperado = resultado === 11 ? "0" : resultado === 10 ? "K" : String(resultado);
+
+  return digitoVerificador === esperado;
+}
+
+function formatearRut(value: string) {
+  const rut = limpiarRut(value);
+  if (rut.length < 2) return value;
+
+  const cuerpo = rut.slice(0, -1);
+  const digitoVerificador = rut.slice(-1);
+  return `${Number(cuerpo).toLocaleString("es-CL")}-${digitoVerificador}`;
+}
+
 export default function Home() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [enviado, setEnviado] = useState(false);
@@ -11,9 +47,18 @@ export default function Home() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    const form = e.currentTarget;
+    const rutInput = form.elements.namedItem("rut") as HTMLInputElement;
+
+    if (!rutChilenoValido(rutInput.value)) {
+      rutInput.setCustomValidity("Ingrese un RUT chileno válido con su dígito verificador.");
+      rutInput.reportValidity();
+      rutInput.focus();
+      return;
+    }
+
     setCargando(true);
 
-    const form = e.currentTarget;
     const data = Object.fromEntries(new FormData(form));
 
     try {
@@ -109,7 +154,26 @@ export default function Home() {
               name="rut"
               required
               type="text"
-              placeholder="RUT del titular"
+              inputMode="text"
+              maxLength={12}
+              placeholder="RUT del titular (ej: 12.345.678-5)"
+              onInput={(event) => {
+                const input = event.currentTarget;
+                input.value = input.value.replace(/[^0-9kK.-]/g, "").toUpperCase();
+                input.setCustomValidity("");
+              }}
+              onBlur={(event) => {
+                const input = event.currentTarget;
+
+                if (input.value && !rutChilenoValido(input.value)) {
+                  input.setCustomValidity("Ingrese un RUT chileno válido con su dígito verificador.");
+                  input.reportValidity();
+                  return;
+                }
+
+                input.setCustomValidity("");
+                if (input.value) input.value = formatearRut(input.value);
+              }}
               className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
 
@@ -125,7 +189,13 @@ export default function Home() {
               name="telefono"
               required
               type="tel"
+              inputMode="numeric"
+              pattern="[0-9]+"
+              maxLength={15}
               placeholder="Teléfono de contacto"
+              onInput={(event) => {
+                event.currentTarget.value = event.currentTarget.value.replace(/\D/g, "");
+              }}
               className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
 
@@ -140,8 +210,15 @@ export default function Home() {
               </option>
               <option>Sin servicio de Internet</option>
               <option>Sin servicio de Televisión</option>
-              <option>Otros</option>
             </select>
+
+            <textarea
+              name="comentarios"
+              rows={4}
+              maxLength={1000}
+              placeholder="Comentarios (opcional)"
+              className="w-full resize-y border border-gray-300 rounded-lg p-3 text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
 
             <button
               type="submit"
