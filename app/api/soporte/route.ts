@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   const nombre = texto(body.nombre, 120);
   const rut = texto(body.rut, 20);
   const comuna = texto(body.comuna, 100);
-  const telefono = texto(body.telefono, 30);
+  const telefono = texto(body.telefono, 30).replace(/\D/g, "");
   const problema = texto(body.problema, 100);
   const comentarios = texto(body.comentarios, 1000);
 

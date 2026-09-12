@@ -49,6 +49,7 @@ export default function Home() {
 
     const form = e.currentTarget;
     const rutInput = form.elements.namedItem("rut") as HTMLInputElement;
+    const telefonoInput = form.elements.namedItem("telefono") as HTMLInputElement;
 
     if (!rutChilenoValido(rutInput.value)) {
       rutInput.setCustomValidity("Ingrese un RUT chileno válido con su dígito verificador.");
@@ -56,6 +57,8 @@ export default function Home() {
       rutInput.focus();
       return;
     }
+
+    telefonoInput.value = telefonoInput.value.replace(/\D/g, "");
 
     setCargando(true);
 
