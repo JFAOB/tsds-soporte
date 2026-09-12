@@ -70,14 +70,22 @@ export default function Home() {
         body: JSON.stringify(data),
       });
 
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
       if (!response.ok) {
-        throw new Error("No fue posible enviar la solicitud.");
+        throw new Error(result?.error || "No fue posible enviar la solicitud.");
       }
 
       setEnviado(true);
       form.reset();
-    } catch {
-      alert("Ocurrió un error al enviar la solicitud. Intente nuevamente.");
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error al enviar la solicitud. Intente nuevamente.",
+      );
     } finally {
       setCargando(false);
     }

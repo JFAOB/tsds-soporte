@@ -83,15 +83,30 @@ export async function POST(request: Request) {
   const problema = texto(body.problema, 100);
   const comentarios = texto(body.comentarios, 1000);
 
-  if (
-    !nombre ||
-    !rutChilenoValido(rut) ||
-    !comuna ||
-    !/^\d{7,15}$/.test(telefono) ||
-    !problemasPermitidos.has(problema)
-  ) {
+  if (!nombre || !comuna || !problema) {
     return NextResponse.json(
       { error: "Complete correctamente todos los campos." },
+      { status: 400 },
+    );
+  }
+
+  if (!rutChilenoValido(rut)) {
+    return NextResponse.json(
+      { error: "El RUT ingresado no es válido." },
+      { status: 400 },
+    );
+  }
+
+  if (!/^\d{7,15}$/.test(telefono)) {
+    return NextResponse.json(
+      { error: "El teléfono debe contener solamente números." },
+      { status: 400 },
+    );
+  }
+
+  if (!problemasPermitidos.has(problema)) {
+    return NextResponse.json(
+      { error: "Seleccione un problema válido." },
       { status: 400 },
     );
   }
