@@ -1,0 +1,597 @@
+[
+  {
+    "region": "REGION 8",
+    "comuna": "CONCEPCION",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "CORONEL",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "CHIGUAYANTE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "LOTA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "PENCO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "SAN PEDRO DE LA PAZ",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "TALCAHUANO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "TOME",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "HUALPEN",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "LOS ANGELES",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "CABRERO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "LAJA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "NACIMIENTO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "SAN ROSENDO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 8",
+    "comuna": "ARAUCO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 16",
+    "comuna": "BULNES",
+    "plazo": "SE HACE RUTA",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 16",
+    "comuna": "QUILLON",
+    "plazo": "SE HACE RUTA",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 16",
+    "comuna": "YUNGAY",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "TEMUCO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "CARAHUE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "CURARREHUE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "FREIRE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "GORBEA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "LAUTARO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "NUEVA IMPERIAL",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "PADRE LAS CASAS",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "PERQUENCO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "PITRUFQUEN",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "PUCON",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "VILCUN",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "VILLARRICA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "ANGOL",
+    "plazo": "SE HACE RUTA",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "LOS SAUCES",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "TRAIGUEN",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 9",
+    "comuna": "VICTORIA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "VALDIVIA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "CORRAL",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "LOS LAGOS",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "MARIQUINA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "PAILLACO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "PANGUIPULLI",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "LA UNION",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "FUTRONO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "LAGO RANCO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 14",
+    "comuna": "RIO BUENO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "OSORNO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "PUERTO OCTAY",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "PURRANQUE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "PUYEHUE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "RIO NEGRO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "SAN JUAN DE LA COSTA",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "SAN PABLO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "PUERTO MONTT",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "CALBUCO",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "COCHAMO",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "FRESIA",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "FRUTILLAR",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "LOS MUERMOS",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "LLANQUIHUE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "MAULLIN",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SOLO VENTA"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "PUERTO VARAS",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "CHAITEN",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "FUTALEUFU",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "HUALAIHUE",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 10",
+    "comuna": "PALENA",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "COYHAIQUE",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "LAGO VERDE",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "AYSEN",
+    "plazo": "CORTO PLAZO",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "CISNES",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "GUAITECAS",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "CHILE CHICO",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "RIO IBAÑEZ",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "COCHRANE",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "OHIGGINS",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 11",
+    "comuna": "TORTEL",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "PUNTA ARENAS",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "LAGUNA BLANCA",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "RIO VERDE",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "SAN GREGORIO",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "PUERTO NATALES",
+    "plazo": "CORTO PLAZO",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "TORRES DEL PAINE",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "PORVENIR",
+    "plazo": "SE HACE RUTA",
+    "fibra": "SI",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "PRIMAVERA",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "TIMAUKEL",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  },
+  {
+    "region": "REGION 12",
+    "comuna": "CABO DE HORNOS",
+    "plazo": "SE HACE RUTA",
+    "fibra": "NO",
+    "servicioTecnico": "SI"
+  }
+]
