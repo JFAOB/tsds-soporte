@@ -11,7 +11,24 @@ function reply(data: unknown, status=200) { return NextResponse.json(data,{statu
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function GET(request: Request) {
   if (!await authorized()) return reply({error:"Sesión finalizada. Ingresa nuevamente."},401);
-  const fecha = new URL(request.url).searchParams.get("fecha") ?? chileDate();
+  const params = new URL(request.url).searchParams;
+  const cliente = params.get("cliente");
+  if (cliente !== null) {
+    if (!cliente.trim() || cliente.length>160) return reply({error:"Nombre no válido."},400);
+    const hoy=chileDate(), inicio=new Date(hoy+"T00:00:00Z");
+    inicio.setUTCDate(inicio.getUTCDate()-60);
+    const normalName=(s:string)=>normalizar(s).replace(/\s+/g," ").trim();
+    try {
+      const db=database();
+      for(let offset=0;;offset+=1000){
+        const {data,error}=await db.from("backoffice_registros").select("id,cliente").gte("fecha",inicio.toISOString().slice(0,10)).lte("fecha",hoy).order("id").range(offset,offset+999);
+        if(error) return reply({error:"No fue posible verificar los últimos 60 días."},500);
+        if(data.some(row=>normalName(row.cliente)===normalName(cliente))) return reply({reingreso:true});
+        if(data.length<1000) return reply({reingreso:false});
+      }
+    } catch { return reply({error:"No fue posible verificar los últimos 60 días."},503); }
+  }
+  const fecha = params.get("fecha") ?? chileDate();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha)) || new Date(fecha).toISOString().slice(0,10)!==fecha) return reply({error:"Fecha no válida."},400);
   try {
     const db=database(); const rows=[];
