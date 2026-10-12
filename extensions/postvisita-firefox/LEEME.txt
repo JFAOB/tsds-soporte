@@ -1,0 +1,20 @@
+TSDS · Correos Postvisita — primera versión de prueba
+
+1. Descomprime el ZIP en una carpeta.
+2. En Firefox abre about:debugging#/runtime/this-firefox
+3. Pulsa «Cargar complemento temporal» y selecciona manifest.json.
+4. Recarga las pestañas de DIRECTV y tsds.cl/postvisita.
+5. Inicia sesión en DIRECTV: Gestión WO > menú de tres rayas > Consulta cliente.
+   Deja esa ventana abierta en una sola pestaña. No la utilices mientras consulta.
+6. En Postvisita carga el Excel/CSV y pulsa «Probar con 1 cliente».
+7. Compara el correo con DIRECTV. Si coincide, pulsa «Completar correos».
+
+La extensión solo consulta números sin correo válido. No modifica clientes,
+no guarda contraseñas y no envía correos. Debes revisar y confirmar el envío.
+Detener finaliza después de la consulta en curso. Si una consulta no termina,
+recarga DIRECTV antes de reintentar; no se reutiliza el resultado anterior.
+Los correos quedan únicamente en el lote abierto de Postvisita.
+
+Esta instalación temporal se elimina al reiniciar Firefox. Para instalación
+permanente será necesario firmar la extensión con Mozilla tras validar la prueba.
+El funcionamiento real en DIRECTV todavía debe comprobarse en tu sesión.

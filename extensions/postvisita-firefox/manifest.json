@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+  "name": "TSDS · Correos Postvisita",
+  "version": "0.1.0",
+  "description": "Consulta correos por suscriptor en la sesión abierta de DIRECTV y los completa en Postvisita.",
+  "browser_specific_settings": {"gecko": {"id": "postvisita@tsds.cl", "strict_min_version": "109.0"}},
+  "permissions": ["https://tsds.cl/*", "https://www.tsds.cl/*", "https://sistemas.directv.cl/AW080_Eservice/*"],
+  "background": {"scripts": ["background.js"]},
+  "content_scripts": [
+    {"matches": ["https://tsds.cl/postvisita*", "https://www.tsds.cl/postvisita*"], "js": ["bridge.js"], "run_at": "document_idle"},
+    {"matches": ["https://sistemas.directv.cl/AW080_Eservice/*"], "js": ["directv.js"], "run_at": "document_idle"}
+  ]
+}
