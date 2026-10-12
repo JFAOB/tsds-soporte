@@ -27,7 +27,7 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
   async function login(e:React.FormEvent) {e.preventDefault();setBusy(true);setError("");try{await request("login","POST",{codigo});setCodigo("");setAccess(true);}catch(e){setError(e instanceof Error?e.message:"Error de conexión.");}finally{setBusy(false);}}
   async function save(e:React.FormEvent) {
     e.preventDefault(); if(!selected){setError("Selecciona un vendedor del listado.");return;}setBusy(true);setError("");setNotice("");
-    try {await request("registros",editing?"PATCH":"POST",{...form,vendedor:selected.nombre,...(editing?{id:editing.id}:{})});setForm({...empty,backoffice:form.backoffice});setEditing(null);setNotice(editing?"Registro actualizado.":"Registro guardado.");await load();}
+    try {await request("registros",editing?"PATCH":"POST",{...form,vendedor:selected.nombre,...(editing?{id:editing.id}:{})});setForm(empty);setEditing(null);setNotice(editing?"Registro actualizado.":"Registro guardado.");await load();}
     catch(e){setError(e instanceof Error?e.message:"Error de conexión.");}finally{setBusy(false);}
   }
   async function remove(row:Row){if(!confirm(`¿Eliminar el registro de ${row.cliente}?`))return;setBusy(true);setError("");try{await request("registros","DELETE",{id:row.id});if(editing?.id===row.id){setEditing(null);setForm({...empty,backoffice:form.backoffice});}setNotice("Registro eliminado.");await load();}catch(e){setError(e instanceof Error?e.message:"Error de conexión.");}finally{setBusy(false);}}
