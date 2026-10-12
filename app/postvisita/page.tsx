@@ -12,17 +12,17 @@ export default async function PostVisitaPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10">
-      <section className="mx-auto max-w-6xl overflow-hidden rounded-3xl bg-white shadow-xl shadow-blue-950/10">
-        <header className="bg-gradient-to-r from-sky-700 to-blue-800 px-6 py-7 text-white sm:px-9">
+    <main className="min-h-screen bg-slate-100 px-3 py-4">
+      <section className="mx-auto max-w-6xl overflow-hidden rounded-2xl bg-white shadow-xl shadow-blue-950/10">
+        <header className="bg-gradient-to-r from-sky-700 to-blue-800 px-5 py-4 text-white sm:px-6">
           <p className="text-sm font-bold uppercase tracking-[0.22em] text-blue-100">TSDS</p>
-          <h1 className="mt-1 text-3xl font-black">POST VISITA</h1>
-          <p className="mt-2 max-w-2xl text-sm text-blue-100">
+          <h1 className="mt-1 text-2xl font-black">POST VISITA</h1>
+          <p className="mt-1 max-w-2xl text-sm text-blue-100">
             Envío de información y soporte a clientes después de una visita técnica.
           </p>
         </header>
 
-        <div className="p-6 sm:p-9">
+        <div className="p-3 sm:p-4">
           <PostVisitaUpload />
         </div>
       </section>
