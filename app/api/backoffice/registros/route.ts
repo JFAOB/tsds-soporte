@@ -29,11 +29,14 @@ export async function GET(request: Request) {
     } catch { return reply({error:"No fue posible verificar los últimos 60 días."},503); }
   }
   const fecha = params.get("fecha") ?? chileDate();
+  const desde=params.get("desde")??fecha, hasta=params.get("hasta")??fecha;
+  const validDate=(value:string)=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
+  if(!validDate(desde)||!validDate(hasta)||desde>hasta)return reply({error:"Rango de fechas no válido."},400);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha)) || new Date(fecha).toISOString().slice(0,10)!==fecha) return reply({error:"Fecha no válida."},400);
   try {
     const db=database(); const rows=[];
     for (let offset=0;;offset+=1000) {
-      const {data,error}=await db.from("backoffice_registros").select("id,fecha,cliente,vendedor,zona,tipo_venta,backoffice,created_at").eq("fecha",fecha).order("created_at",{ascending:false}).order("id").range(offset,offset+999);
+      const {data,error}=await db.from("backoffice_registros").select("id,fecha,cliente,vendedor,zona,tipo_venta,backoffice,created_at").gte("fecha",desde).lte("fecha",hasta).order("created_at",{ascending:false}).order("id").range(offset,offset+999);
       if(error) return reply({error:"No fue posible cargar los registros. Verifica la tabla Backoffice."},500);
       rows.push(...data); if(data.length<1000) break;
     }

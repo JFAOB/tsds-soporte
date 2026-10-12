@@ -2,12 +2,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { normalizar, vendedores } from "@/lib/backoffice-vendedores";
 import styles from "./backoffice.module.css";
+import HistoryDialog, {ActionIcon} from "./history-dialog";
 type Row={id:string;fecha:string;cliente:string;vendedor:string;zona:string;tipo_venta:string;backoffice:string;created_at:string};
 const empty={cliente:"",vendedor:"",tipo_venta:"TV",backoffice:""};
 export default function Backoffice({authenticated,today}:{authenticated:boolean;today:string}) {
   const [access,setAccess]=useState(authenticated),[codigo,setCodigo]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [fecha,setFecha]=useState(today),[rows,setRows]=useState<Row[]>([]),[form,setForm]=useState(empty),[editing,setEditing]=useState<Row|null>(null);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[search,setSearch]=useState(""),[zone,setZone]=useState(""),[showSuggestions,setShowSuggestions]=useState(false);
+  const [modal,setModal]=useState<"search"|"report"|null>(null);
+  const endSession=useCallback(()=>{setAccess(false);setModal(null);},[]);
   const [activeSuggestion,setActiveSuggestion]=useState(-1);
   const suggestionList=useRef<HTMLDivElement>(null);
   const generation=useRef(0);
@@ -59,7 +62,7 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
   const dailyIds=new Map([...rows].sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id)).map((row,index)=>[row.id,index+1]));
   const visible=rows.filter(r=>(!zone||r.zona===zone)&&normalizar(`${r.cliente} ${r.vendedor} ${r.backoffice} ${r.tipo_venta}`).includes(normalizar(search)));
   return <main className={styles.page}><div className={styles.container}>
-    <header className={styles.header}><div><p className={styles.brand}>TSDS · GESTIÓN DE VENTAS</p><h1>Backoffice</h1><p>Registro diario de ingresos</p></div>{access&&<button disabled={busy} onClick={async()=>{setBusy(true);try{await request("logout","POST");setAccess(false);setRows([]);setForm(empty);setEditing(null);setError("");setNotice("");}catch(e){setError(e instanceof Error?e.message:"Error de conexión.");}finally{setBusy(false);}}}>Cerrar sesión</button>}</header>
+    <header className={styles.header}><div><p className={styles.brand}>TSDS · GESTIÓN DE VENTAS</p><h1>Backoffice</h1><p>Registro diario de ingresos</p></div>{access&&<div className={styles.headerActions}><button className={styles.iconButton} title="Informe" aria-label="Informe" onClick={()=>setModal("report")}><ActionIcon kind="report"/></button><button className={styles.iconButton} title="Buscador" aria-label="Buscador" onClick={()=>setModal("search")}><ActionIcon kind="search"/></button><button className={styles.iconButton} title="Cerrar sesión" aria-label="Cerrar sesión" disabled={busy} onClick={async()=>{setBusy(true);try{await request("logout","POST");setAccess(false);setRows([]);setForm(empty);setEditing(null);setError("");setNotice("");}catch(e){setError(e instanceof Error?e.message:"Error de conexión.");}finally{setBusy(false);}}}><ActionIcon kind="logout"/></button></div>}</header>
     {error&&<p role="alert" className={styles.error}>{error}</p>}{notice&&access&&<p role="status" className={styles.notice}>{notice}</p>}
     {!access?<form onSubmit={login} className={styles.login}><h2>Acceso Backoffice</h2><label>Código de acceso<input autoFocus type="password" inputMode="numeric" autoComplete="current-password" value={codigo} onChange={e=>setCodigo(e.target.value)} required maxLength={100}/></label><button className={styles.primary} disabled={busy}>{busy?"Ingresando…":"Ingresar"}</button></form>:<>
     <section className={styles.card}><h2>{editing?"Editar registro":"Nuevo registro"}</h2><p className={styles.muted}>{editing?`Fecha original: ${editing.fecha.split("-").reverse().join("/")}`:"La fecha se asigna automáticamente al guardar, según la hora de Chile."}</p>
@@ -79,5 +82,6 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
     <div className={styles.stats}>{["TV","NET","REINGRESO"].map(t=><span key={t}>{t}<strong>{visible.filter(r=>r.tipo_venta===t).length}</strong></span>)}<span>Total<strong>{visible.length}</strong></span></div>
     <p className={styles.muted}>Actualización automática cada 30 segundos.</p><div className={styles.table}><table><thead><tr>{["ID","Fecha","Cliente","Vendedor","Zona","Tipo venta","Backoffice","Acciones"].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{visible.map(r=><tr key={r.id}><td>{dailyIds.get(r.id)}</td><td>{r.fecha.split("-").reverse().join("/")}</td><td>{r.cliente}</td><td>{r.vendedor}</td><td>{r.zona}</td><td>{r.tipo_venta}</td><td>{r.backoffice}</td><td className={styles.rowActions}><button disabled={busy} onClick={()=>{setEditing(r);setForm({cliente:r.cliente,vendedor:r.vendedor,tipo_venta:r.tipo_venta,backoffice:r.backoffice});setShowSuggestions(false);setNotice("");window.scrollTo({top:0,behavior:"smooth"});}}>Editar</button><button className={styles.danger} disabled={busy} onClick={()=>void remove(r)}>Eliminar</button></td></tr>)}</tbody></table></div>{!visible.length&&<p className={styles.empty}>{loading?"Cargando registros…":"No hay registros para esta consulta."}</p>}
     </section></>}
+  {modal&&access&&<HistoryDialog mode={modal} today={today} onSessionEnd={endSession} onClose={()=>{setModal(null);void load();}} onEdit={row=>{setModal(null);setEditing(row);setForm({cliente:row.cliente,vendedor:row.vendedor,tipo_venta:row.tipo_venta,backoffice:row.backoffice});setShowSuggestions(false);setNotice("");window.scrollTo({top:0,behavior:"smooth"});}}/>}
   </div></main>;
 }
