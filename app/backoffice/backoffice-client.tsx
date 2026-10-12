@@ -1,16 +1,20 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { normalizar, vendedores } from "@/lib/backoffice-vendedores";
+import { normalizar, vendedores as baseVendedores } from "@/lib/backoffice-vendedores";
 import styles from "./backoffice.module.css";
 import HistoryDialog, {ActionIcon} from "./history-dialog";
+import SellerDialog from "./seller-dialog";
 type Row={id:string;fecha:string;cliente:string;vendedor:string;zona:string;tipo_venta:string;backoffice:string;created_at:string};
 const empty={cliente:"",vendedor:"",tipo_venta:"TV",backoffice:""};
 export default function Backoffice({authenticated,today}:{authenticated:boolean;today:string}) {
   const [access,setAccess]=useState(authenticated),[codigo,setCodigo]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [fecha,setFecha]=useState(today),[rows,setRows]=useState<Row[]>([]),[form,setForm]=useState(empty),[editing,setEditing]=useState<Row|null>(null);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[search,setSearch]=useState(""),[zone,setZone]=useState(""),[showSuggestions,setShowSuggestions]=useState(false);
+  const [vendedores,setVendedores]=useState<ReadonlyArray<{nombre:string;zona:string}>>(baseVendedores);
+  const [sellerModal,setSellerModal]=useState(false);
   const [modal,setModal]=useState<"search"|"report"|null>(null);
-  const endSession=useCallback(()=>{setAccess(false);setModal(null);},[]);
+  const endSession=useCallback(()=>{setAccess(false);setModal(null);setSellerModal(false);},[]);
+  useEffect(()=>{if(!access)return;const controller=new AbortController();async function refresh(){try{const response=await fetch("/api/backoffice/vendedores",{cache:"no-store",signal:controller.signal});const data=await response.json();if(controller.signal.aborted)return;if(response.status===401){endSession();return;}if(!response.ok)throw new Error(data.error);setVendedores(data.vendedores);}catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:"No fue posible cargar los vendedores.");}}void refresh();const timer=setInterval(()=>void refresh(),30000);return()=>{controller.abort();clearInterval(timer);};},[access,endSession]);
   const [activeSuggestion,setActiveSuggestion]=useState(-1);
   const suggestionList=useRef<HTMLDivElement>(null);
   const generation=useRef(0);
@@ -65,7 +69,7 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
     <header className={styles.header}><div><p className={styles.brand}>TSDS · GESTIÓN DE VENTAS</p><h1>Backoffice</h1><p>Registro diario de ingresos</p></div>{access&&<div className={styles.headerActions}><button className={styles.iconButton} title="Informe" aria-label="Informe" onClick={()=>setModal("report")}><ActionIcon kind="report"/></button><button className={styles.iconButton} title="Buscador" aria-label="Buscador" onClick={()=>setModal("search")}><ActionIcon kind="search"/></button><button className={styles.iconButton} title="Cerrar sesión" aria-label="Cerrar sesión" disabled={busy} onClick={async()=>{setBusy(true);try{await request("logout","POST");setAccess(false);setRows([]);setForm(empty);setEditing(null);setError("");setNotice("");}catch(e){setError(e instanceof Error?e.message:"Error de conexión.");}finally{setBusy(false);}}}><ActionIcon kind="logout"/></button></div>}</header>
     {error&&<p role="alert" className={styles.error}>{error}</p>}{notice&&access&&<p role="status" className={styles.notice}>{notice}</p>}
     {!access?<form onSubmit={login} className={styles.login}><h2>Acceso Backoffice</h2><label>Código de acceso<input autoFocus type="password" inputMode="numeric" autoComplete="current-password" value={codigo} onChange={e=>setCodigo(e.target.value)} required maxLength={100}/></label><button className={styles.primary} disabled={busy}>{busy?"Ingresando…":"Ingresar"}</button></form>:<>
-    <section className={styles.card}><h2>{editing?"Editar registro":"Nuevo registro"}</h2><p className={styles.muted}>{editing?`Fecha original: ${editing.fecha.split("-").reverse().join("/")}`:"La fecha se asigna automáticamente al guardar, según la hora de Chile."}</p>
+    <section className={styles.card}><div className={styles.heading}><h2>{editing?"Editar registro":"Nuevo registro"}</h2>{!editing&&<button type="button" className={styles.iconButton} title="Agregar vendedor" aria-label="Agregar vendedor" disabled={busy} onClick={()=>setSellerModal(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>}</div><p className={styles.muted}>{editing?`Fecha original: ${editing.fecha.split("-").reverse().join("/")}`:"La fecha se asigna automáticamente al guardar, según la hora de Chile."}</p>
     <form onSubmit={save} className={styles.form}><label>Nombre cliente<input value={form.cliente} onChange={e=>{saleTypeOverride.current=false;setClientCheck({name:"",duplicate:false,error:""});setForm({...form,cliente:e.target.value,tipo_venta:duplicateClient&&form.tipo_venta==="REINGRESO"?"TV":form.tipo_venta});}} required maxLength={160}/></label>
     <div className={styles.seller} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget)){setShowSuggestions(false);setActiveSuggestion(-1);}}}><label>Nombre vendedor<input autoComplete="off" role="combobox" aria-autocomplete="list" aria-expanded={suggestionsOpen} aria-controls="vendedor-opciones" aria-activedescendant={suggestionsOpen&&activeSuggestion>=0?`vendedor-opcion-${activeSuggestion}`:undefined} value={form.vendedor} onFocus={()=>{setShowSuggestions(true);setActiveSuggestion(-1);}} onChange={e=>{setForm({...form,vendedor:e.target.value});setShowSuggestions(true);setActiveSuggestion(-1);}} onKeyDown={e=>{
       if(e.nativeEvent.isComposing)return;
@@ -82,6 +86,7 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
     <div className={styles.stats}>{["TV","NET","REINGRESO"].map(t=><span key={t}>{t}<strong>{visible.filter(r=>r.tipo_venta===t).length}</strong></span>)}<span>Total<strong>{visible.length}</strong></span></div>
     <p className={styles.muted}>Actualización automática cada 30 segundos.</p><div className={styles.table}><table><thead><tr>{["ID","Fecha","Cliente","Vendedor","Zona","Tipo venta","Backoffice","Acciones"].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{visible.map(r=><tr key={r.id}><td>{dailyIds.get(r.id)}</td><td>{r.fecha.split("-").reverse().join("/")}</td><td>{r.cliente}</td><td>{r.vendedor}</td><td>{r.zona}</td><td>{r.tipo_venta}</td><td>{r.backoffice}</td><td className={styles.rowActions}><button disabled={busy} onClick={()=>{setEditing(r);setForm({cliente:r.cliente,vendedor:r.vendedor,tipo_venta:r.tipo_venta,backoffice:r.backoffice});setShowSuggestions(false);setNotice("");window.scrollTo({top:0,behavior:"smooth"});}}>Editar</button><button className={styles.danger} disabled={busy} onClick={()=>void remove(r)}>Eliminar</button></td></tr>)}</tbody></table></div>{!visible.length&&<p className={styles.empty}>{loading?"Cargando registros…":"No hay registros para esta consulta."}</p>}
     </section></>}
+  {sellerModal&&access&&<SellerDialog onClose={()=>setSellerModal(false)} onSessionEnd={endSession} onAdded={seller=>{setVendedores(current=>[...current,seller].sort((a,b)=>a.nombre.localeCompare(b.nombre,"es")));setForm(current=>({...current,vendedor:seller.nombre}));setShowSuggestions(false);setSellerModal(false);setNotice("Vendedor agregado.");}}/>}
   {modal&&access&&<HistoryDialog mode={modal} today={today} onSessionEnd={endSession} onClose={()=>{setModal(null);void load();}} onEdit={row=>{setModal(null);setEditing(row);setForm({cliente:row.cliente,vendedor:row.vendedor,tipo_venta:row.tipo_venta,backoffice:row.backoffice});setShowSuggestions(false);setNotice("");window.scrollTo({top:0,behavior:"smooth"});}}/>}
   </div></main>;
 }

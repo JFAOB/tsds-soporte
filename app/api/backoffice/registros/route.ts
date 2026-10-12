@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { authorized, chileDate, sameOrigin } from "@/lib/backoffice-auth";
-import { vendedores, normalizar } from "@/lib/backoffice-vendedores";
+import { normalizar } from "@/lib/backoffice-vendedores";
+import {listSellers,sellerKey} from "@/lib/backoffice-catalog";
 function database() {
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL, key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Falta configurar la conexión de Supabase en el servidor.");
@@ -49,7 +50,9 @@ async function mutate(request: Request, method: "POST"|"PATCH"|"DELETE") {
   const body=await request.json().catch(()=>null);
   if (!body || (method!=="POST" && (typeof body.id!=="string" || !uuid.test(body.id)))) return reply({error:"Registro no válido."},400);
   const text=(key: string,max: number)=>typeof body[key]==="string" && body[key].trim().length>0 && body[key].trim().length<=max;
-  const vendedor=typeof body.vendedor==="string"?vendedores.find(v=>normalizar(v.nombre)===normalizar(body.vendedor)):undefined;
+  let vendedores:{nombre:string;zona:string}[]=[];
+  if(method!=="DELETE"){try{vendedores=await listSellers();}catch{return reply({error:"No fue posible validar el vendedor."},503);}}
+  const vendedor=typeof body.vendedor==="string"?vendedores.find(v=>sellerKey(v.nombre)===sellerKey(body.vendedor)):undefined;
   if(method!=="DELETE" && (!text("cliente",160)||!text("backoffice",80)||!vendedor||!["TV","NET","REINGRESO"].includes(body.tipo_venta))) return reply({error:"Completa los campos y selecciona un vendedor del listado."},400);
   try {
     const db=database();
