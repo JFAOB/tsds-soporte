@@ -8,9 +8,14 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
   const [access,setAccess]=useState(authenticated),[codigo,setCodigo]=useState(""),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [fecha,setFecha]=useState(today),[rows,setRows]=useState<Row[]>([]),[form,setForm]=useState(empty),[editing,setEditing]=useState<Row|null>(null);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[search,setSearch]=useState(""),[zone,setZone]=useState(""),[showSuggestions,setShowSuggestions]=useState(false);
+  const [activeSuggestion,setActiveSuggestion]=useState(-1);
+  const suggestionList=useRef<HTMLDivElement>(null);
   const generation=useRef(0);
   const selected=vendedores.find(v=>normalizar(v.nombre)===normalizar(form.vendedor));
   const matches=vendedores.filter(v=>normalizar(v.nombre).includes(normalizar(form.vendedor)));
+  const suggestionsOpen=showSuggestions&&Boolean(form.vendedor)&&!selected;
+  function chooseSeller(nombre:string) { setForm({...form,vendedor:nombre});setShowSuggestions(false);setActiveSuggestion(-1); }
+  useEffect(()=>{if(suggestionsOpen&&activeSuggestion>=0)suggestionList.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({block:"nearest"});},[activeSuggestion,suggestionsOpen]);
   const load=useCallback(async()=>{
     const current=++generation.current; setLoading(true); setError("");
     try { const r=await fetch(`/api/backoffice/registros?fecha=${fecha}`,{cache:"no-store"}); const data=await r.json(); if(current!==generation.current)return;
@@ -39,7 +44,12 @@ export default function Backoffice({authenticated,today}:{authenticated:boolean;
     {!access?<form onSubmit={login} className={styles.login}><h2>Acceso Backoffice</h2><label>Código de acceso<input autoFocus type="password" inputMode="numeric" autoComplete="current-password" value={codigo} onChange={e=>setCodigo(e.target.value)} required maxLength={100}/></label><button className={styles.primary} disabled={busy}>{busy?"Ingresando…":"Ingresar"}</button></form>:<>
     <section className={styles.card}><h2>{editing?"Editar registro":"Nuevo registro"}</h2><p className={styles.muted}>{editing?`Fecha original: ${editing.fecha.split("-").reverse().join("/")}`:"La fecha se asigna automáticamente al guardar, según la hora de Chile."}</p>
     <form onSubmit={save} className={styles.form}><label>Nombre cliente<input value={form.cliente} onChange={e=>setForm({...form,cliente:e.target.value})} required maxLength={160}/></label>
-    <div className={styles.seller}><label>Nombre vendedor<input autoComplete="off" value={form.vendedor} onFocus={()=>setShowSuggestions(true)} onChange={e=>{setForm({...form,vendedor:e.target.value});setShowSuggestions(true);}} required maxLength={100} aria-describedby="vendedor-ayuda"/></label><small id="vendedor-ayuda">Escribe y selecciona un nombre del listado.</small>{showSuggestions&&form.vendedor&&!selected&&<div className={styles.suggestions}>{matches.length?matches.map(v=><button type="button" key={v.nombre} onClick={()=>{setForm({...form,vendedor:v.nombre});setShowSuggestions(false);}}>{v.nombre}<small>{v.zona}</small></button>):<p>No hay coincidencias.</p>}</div>}</div>
+    <div className={styles.seller} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget)){setShowSuggestions(false);setActiveSuggestion(-1);}}}><label>Nombre vendedor<input autoComplete="off" role="combobox" aria-autocomplete="list" aria-expanded={suggestionsOpen} aria-controls="vendedor-opciones" aria-activedescendant={suggestionsOpen&&activeSuggestion>=0?`vendedor-opcion-${activeSuggestion}`:undefined} value={form.vendedor} onFocus={()=>{setShowSuggestions(true);setActiveSuggestion(-1);}} onChange={e=>{setForm({...form,vendedor:e.target.value});setShowSuggestions(true);setActiveSuggestion(-1);}} onKeyDown={e=>{
+      if(e.nativeEvent.isComposing)return;
+      if((e.key==="ArrowDown"||e.key==="ArrowUp")&&form.vendedor&&!selected&&matches.length){e.preventDefault();setShowSuggestions(true);setActiveSuggestion(current=>e.key==="ArrowDown"?(current+1)%matches.length:current<=0?matches.length-1:current-1);}
+      else if(e.key==="Enter"&&suggestionsOpen){e.preventDefault();if(activeSuggestion>=0&&matches[activeSuggestion])chooseSeller(matches[activeSuggestion].nombre);}
+      else if(e.key==="Escape"){e.preventDefault();setShowSuggestions(false);setActiveSuggestion(-1);}
+    }} required maxLength={100} aria-describedby="vendedor-ayuda"/></label><small id="vendedor-ayuda">Escribe un nombre. Usa ↑ y ↓ para recorrer las opciones y Enter para seleccionar.</small>{suggestionsOpen&&<div ref={suggestionList} id="vendedor-opciones" role="listbox" aria-label="Vendedores" className={styles.suggestions}>{matches.length?matches.map((v,index)=><button type="button" role="option" id={`vendedor-opcion-${index}`} aria-selected={activeSuggestion===index} tabIndex={-1} style={activeSuggestion===index?{background:"#d8ebff",boxShadow:"inset 3px 0 #126fb6"}:undefined} key={v.nombre} onMouseDown={e=>e.preventDefault()} onMouseEnter={()=>setActiveSuggestion(index)} onClick={()=>chooseSeller(v.nombre)}>{v.nombre}<small>{v.zona}</small></button>):<p>No hay coincidencias.</p>}</div>}</div>
     <label>Zona<input readOnly value={selected?.zona??""} placeholder="Según vendedor"/></label>
     <label>Tipo de venta<select value={form.tipo_venta} onChange={e=>setForm({...form,tipo_venta:e.target.value})}><option>TV</option><option>NET</option><option>REINGRESO</option></select></label>
     <label>Backoffice<input value={form.backoffice} onChange={e=>setForm({...form,backoffice:e.target.value})} required maxLength={80}/></label>
