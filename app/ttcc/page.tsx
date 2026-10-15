@@ -274,20 +274,12 @@ export default function TTCC() {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const ultimoDia = new Date(hoy);
-  ultimoDia.setDate(
-    ultimoDia.getDate() + 4
-  );
-
   const hoyISO = fechaLocalISO(hoy);
-  const ultimoDiaISO =
-    fechaLocalISO(ultimoDia);
 
   const eventosVisibles = eventos
     .filter(
       (evento) =>
-        evento.fecha >= hoyISO &&
-        evento.fecha <= ultimoDiaISO
+        evento.fecha >= hoyISO
     )
     .sort((a, b) =>
       a.fecha.localeCompare(b.fecha)
@@ -583,7 +575,7 @@ export default function TTCC() {
               {eventosVisibles.length === 0 ? (
 
                 <div className="text-center text-sm text-gray-500 py-5">
-                  No hay eventos programados para los próximos 5 días.
+                  No hay próximos eventos programados.
                 </div>
 
               ) : (
