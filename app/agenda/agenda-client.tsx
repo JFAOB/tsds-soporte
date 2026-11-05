@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import * as XLSX from "xlsx";
+import { read, utils } from "xlsx";
 
 type RawRow = Record<string, unknown>;
 type Estado = "Agendada" | "Despachada" | "Sin Agendar";
@@ -233,9 +233,9 @@ export default function AgendaClient() {
     setError("");
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+      const workbook = read(buffer, { type: "array", cellDates: false });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const raw = XLSX.utils.sheet_to_json<RawRow>(sheet, { defval: "", raw: false });
+      const raw = utils.sheet_to_json<RawRow>(sheet, { defval: "", raw: false });
       const ordenes = raw.map(convertirOrden).filter((item): item is Orden => Boolean(item));
       if (!ordenes.length) throw new Error("No se encontraron órdenes válidas. Revisa que el archivo tenga las columnas originales del backlog.");
       const nuevos = armarReportes(ordenes, fechaCarga);
