@@ -201,7 +201,7 @@ function armarReportes(ordenes: Orden[], fechaCarga: Date): RegionReporte[] {
   });
 }
 
-function descargarCanvas(reporte: RegionReporte, fecha: Date) {
+function crearCanvas(reporte: RegionReporte, fecha: Date) {
   const scale = 2;
   const width = 960;
   const row = 30;
@@ -210,7 +210,7 @@ function descargarCanvas(reporte: RegionReporte, fecha: Date) {
   canvas.width = width * scale;
   canvas.height = height * scale;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  if (!ctx) return null;
   ctx.scale(scale, scale);
   ctx.fillStyle = "#f4f7fa";
   ctx.fillRect(0, 0, width, height);
@@ -272,10 +272,7 @@ function descargarCanvas(reporte: RegionReporte, fecha: Date) {
   ctx.fillStyle = "#60758a";
   ctx.font = "11px Arial";
   ctx.fillText("Generado en TSDS · Datos editables antes de descargar", 25, height - 18);
-  const link = document.createElement("a");
-  link.download = `agenda-${reporte.region.split(" ")[0].toLowerCase()}-${siguienteDia(fecha).toISOString().slice(0, 10)}.png`;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
+  return canvas;
 }
 
 export default function AgendaClient() {
@@ -285,6 +282,7 @@ export default function AgendaClient() {
   const [regionActiva, setRegionActiva] = useState("");
   const [archivo, setArchivo] = useState("");
   const [error, setError] = useState("");
+  const [copiado, setCopiado] = useState(false);
   const reporte = useMemo(() => reportes.find((item) => item.region === regionActiva) || reportes[0], [regionActiva, reportes]);
 
   async function cargarArchivo(file: File) {
@@ -324,6 +322,26 @@ export default function AgendaClient() {
     setReportes((actuales) => actuales.map((item) => item.region !== reporte.region ? item : { ...item, tecnicos: item.tecnicos.filter((tecnico) => tecnico.id !== id) }));
   }
 
+  async function copiarImagen() {
+    if (!reporte) return;
+    setError("");
+    setCopiado(false);
+    try {
+      const canvas = crearCanvas(reporte, fechaCarga);
+      if (!canvas || !navigator.clipboard || typeof ClipboardItem === "undefined") {
+        throw new Error("Este navegador no permite copiar imágenes directamente.");
+      }
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => result ? resolve(result) : reject(new Error("No fue posible generar la imagen.")), "image/png");
+      });
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      setCopiado(true);
+      window.setTimeout(() => setCopiado(false), 3000);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No fue posible copiar la imagen.");
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
@@ -356,7 +374,7 @@ export default function AgendaClient() {
           <>
             <nav className="mt-4 flex gap-1.5 overflow-x-auto pb-1">{reportes.map((item) => <button key={item.region} type="button" onClick={() => setRegionActiva(item.region)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${item.region === reporte.region ? "bg-sky-700 text-white" : "border border-slate-300 bg-white text-slate-600"}`}>{REGIONES[item.region] || item.region}</button>)}</nav>
             <section className="mt-2 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
-              <div className="flex flex-col gap-2 border-b border-slate-300 p-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-black">{REGIONES[reporte.region] || reporte.region}</h2><p className="text-xs text-slate-500">Agenda del {siguienteDia(fechaCarga).toLocaleDateString("es-CL")}</p></div><button type="button" onClick={() => descargarCanvas(reporte, fechaCarga)} className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-800">Descargar imagen</button></div>
+              <div className="flex flex-col gap-2 border-b border-slate-300 p-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-black">{REGIONES[reporte.region] || reporte.region}</h2><p className="text-xs text-slate-500">Agenda del {siguienteDia(fechaCarga).toLocaleDateString("es-CL")}</p></div><button type="button" onClick={() => void copiarImagen()} className={`rounded-lg px-4 py-2 text-sm font-bold text-white transition ${copiado ? "bg-emerald-600" : "bg-sky-700 hover:bg-sky-800"}`}>{copiado ? "✓ Imagen copiada" : "Copiar imagen"}</button></div>
               <div className="p-3">
                 <h3 className="mb-2 text-base font-black">Backlog por comuna</h3>
                 <div className="overflow-x-auto"><table className="w-full min-w-[680px] border-collapse text-xs"><thead className="bg-sky-100 text-sky-950"><tr><th className="border border-slate-400 p-2 text-left">Comuna</th><th className="border border-slate-400 p-2 text-center">Agendada</th><th className="border border-slate-400 p-2 text-center">Despachada</th><th className="border border-slate-400 p-2 text-center">Sin agendar</th><th className="border border-slate-400 p-2 text-center">Total</th></tr></thead><tbody>{reporte.comunas.map((comuna) => <tr key={comuna.comuna} className="even:bg-slate-50"><td className="border border-slate-300 p-1.5 font-semibold">{comuna.comuna}</td><td className="border border-slate-300 p-1.5 text-center">{comuna.agendada || ""}</td><td className="border border-slate-300 p-1.5 text-center">{comuna.despachada || ""}</td><td className="border border-slate-300 p-1.5 text-center">{comuna.sinAgendar || ""}</td><td className="border border-slate-300 p-1.5 text-center font-black">{comuna.total}</td></tr>)}<tr className="bg-sky-700 font-black text-white"><td className="border border-sky-900 p-2">TOTAL</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.agendada}</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.despachada}</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.sinAgendar}</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.total}</td></tr></tbody></table></div>
