@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 
 type RawRow = Record<string, unknown>;
 type Estado = "Agendada" | "Despachada" | "Sin Agendar";
@@ -231,7 +232,6 @@ export default function AgendaClient() {
   async function cargarArchivo(file: File) {
     setError("");
     try {
-      const XLSX = await import("xlsx");
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
