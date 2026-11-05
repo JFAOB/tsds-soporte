@@ -61,6 +61,53 @@ function encontrar(row: RawRow, nombre: string) {
   return key ? String(row[key] ?? "").trim() : "";
 }
 
+function parseCsv(text: string): RawRow[] {
+  const firstLine = text.split(/\r?\n/, 1)[0] || "";
+  const candidates = ["\t", ";", ","];
+  const delimiter = candidates.sort((a, b) => firstLine.split(b).length - firstLine.split(a).length)[0];
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = "";
+  let quoted = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '"') {
+      if (quoted && text[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === delimiter && !quoted) {
+      record.push(field);
+      field = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && text[index + 1] === "\n") index += 1;
+      record.push(field);
+      if (record.some((value) => value.trim())) records.push(record);
+      record = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+  if (field || record.length) {
+    record.push(field);
+    records.push(record);
+  }
+
+  const headers = records.shift()?.map((header) => header.replace(/^\uFEFF/, "").trim()) || [];
+  return records.map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || ""])));
+}
+
+function decodeCsv(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le").decode(bytes);
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be").decode(bytes);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
 function parseFecha(value: string) {
   if (!value) return null;
   const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
@@ -233,9 +280,14 @@ export default function AgendaClient() {
     setError("");
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = read(buffer, { type: "array", cellDates: false });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const raw = utils.sheet_to_json<RawRow>(sheet, { defval: "", raw: false });
+      let raw: RawRow[];
+      if (file.name.toLowerCase().endsWith(".csv")) {
+        raw = parseCsv(decodeCsv(buffer));
+      } else {
+        const workbook = read(buffer, { type: "array", cellDates: false });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        raw = utils.sheet_to_json<RawRow>(sheet, { defval: "", raw: false });
+      }
       const ordenes = raw.map(convertirOrden).filter((item): item is Orden => Boolean(item));
       if (!ordenes.length) throw new Error("No se encontraron órdenes válidas. Revisa que el archivo tenga las columnas originales del backlog.");
       const nuevos = armarReportes(ordenes, fechaCarga);
