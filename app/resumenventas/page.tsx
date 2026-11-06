@@ -103,11 +103,13 @@ function imagenDetalle(filas: Venta[]) {
     });
   };
   pintar(detalleColumnas.map(c=>c[1]),0,true);
-  const ordenadas = [...filas].sort((a,b) =>
-    (a.datos.NOMBRECLIENTE ?? "").localeCompare(b.datos.NOMBRECLIENTE ?? "", "es", {sensitivity:"base"}) ||
-    (a.datos.VENDEDOR ?? "").localeCompare(b.datos.VENDEDOR ?? "", "es", {sensitivity:"base"}) ||
-    a.zona.localeCompare(b.zona, "es", {sensitivity:"base"})
-  );
+  // Ordenamiento estable: cliente, luego vendedor y finalmente zona.
+  // El resultado final agrupa por ZONA > VENDEDOR > NOMBRE CLIENTE (todos A-Z).
+  const comparar = (a: string, b: string) => a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
+  const ordenadas = [...filas]
+    .sort((a,b) => comparar(a.datos.NOMBRECLIENTE ?? "", b.datos.NOMBRECLIENTE ?? ""))
+    .sort((a,b) => comparar(a.datos.VENDEDOR ?? "", b.datos.VENDEDOR ?? ""))
+    .sort((a,b) => comparar(a.zona, b.zona));
   ordenadas.forEach((fila,i)=>pintar(detalleColumnas.map(([key])=>key==="ZONA"?fila.zona:key==="ESTADO"?fila.estado:key==="PLAN"?fila.plan:fila.datos[key]??""),i+1,false));
   return canvas;
 }
