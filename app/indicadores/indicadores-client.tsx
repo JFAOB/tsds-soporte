@@ -189,7 +189,7 @@ export default function IndicadoresClient() {
               <p className="my-3 text-center text-xs text-slate-500">o pega la tabla copiada desde Excel (también admite tabla Markdown)</p>
               <textarea value={pegado} onChange={(e) => setPegado(e.target.value)} rows={5} placeholder="Pega aquí la tabla con NOMBRE_TECNICO, SIN FW < 30 Dias, % 3 / 3..." className="w-full rounded-xl border border-slate-300 p-3 text-sm outline-blue-500" />
               <button onClick={() => importar(pegado.trim().startsWith("|") ? tablaMarkdown(pegado) : csvTexto(pegado))} className="mt-2 w-full rounded-xl border border-[#123960] px-4 py-2 font-semibold text-[#123960]">Procesar tabla pegada</button>
-              <label className="mt-4 block text-sm font-semibold">Período del informe (opcional)<input value={periodo} onChange={(e) => setPeriodo(e.target.value)} placeholder="Ej. Noviembre 2026" className="mt-1 w-full rounded-lg border border-slate-300 p-2 font-normal" /></label>
+              <label className="mt-4 block text-sm font-semibold">Mes del informe (aparece arriba en el PNG)<input value={periodo} onChange={(e) => setPeriodo(e.target.value)} placeholder="Ej. NOVIEMBRE 2026" className="mt-1 w-full rounded-lg border border-slate-300 p-2 font-normal" /></label>
             </div>
             {tecnicos.length > 0 && <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold">2. Seleccionar técnico <span className="text-sm font-normal text-slate-500">({tecnicos.length} cargados)</span></h2>
