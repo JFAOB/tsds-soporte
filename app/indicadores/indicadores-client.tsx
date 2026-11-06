@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { read, utils } from "xlsx";
 
 type Fila = Record<string, unknown>;
@@ -155,6 +155,8 @@ export default function IndicadoresClient() {
   const [pegado, setPegado] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [evaluaciones, setEvaluaciones] = useState<Evaluaciones>({});
+  const [vistaImagen, setVistaImagen] = useState("");
+  const [errorImagen, setErrorImagen] = useState("");
   const evaluacionActual = evaluaciones[indice] ?? {};
   const evaluar = (key: string, estado: Evaluacion) => setEvaluaciones((actual) => {
     const siguiente = { ...(actual[indice] ?? {}) };
@@ -165,6 +167,17 @@ export default function IndicadoresClient() {
   const archivoRef = useRef<HTMLInputElement>(null);
   const elegido = tecnicos[indice];
   const encontrados = useMemo(() => tecnicos.map((t, i) => ({ ...t, i })).filter((t) => normalizar(t.nombre).includes(normalizar(busqueda))), [tecnicos, busqueda]);
+
+  useEffect(() => {
+    if (!elegido) return;
+    try {
+      setVistaImagen(crearCanvas(elegido, periodo, evaluacionActual).toDataURL("image/png"));
+      setErrorImagen("");
+    } catch (error) {
+      setVistaImagen("");
+      setErrorImagen(error instanceof Error ? error.message : "No se pudo generar la vista previa.");
+    }
+  }, [elegido, periodo, evaluaciones, indice]);
 
   const importar = (filas: Fila[]) => {
     const lista = transformar(filas);
@@ -239,6 +252,10 @@ export default function IndicadoresClient() {
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="mb-3 text-lg font-semibold">3. Vista previa individual</h2>
               {elegido ? <div className="overflow-hidden rounded-xl bg-slate-100 p-3">
+                <div className="mb-3 rounded-lg border border-slate-300 bg-white p-2">
+                  {vistaImagen ? <img src={vistaImagen} alt={`Imagen PNG del informe de ${elegido.nombre}`} className="h-auto w-full rounded-md" /> : <p role="status" className="p-5 text-center text-sm text-red-700">{errorImagen || "Generando vista previa de la imagen..."}</p>}
+                </div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-700">Editar evaluación (se refleja en la imagen superior)</h3>
                 <div className="rounded-xl bg-[#102c50] p-5 text-white"><div className="text-sm font-bold">TSDS | DIRECTV</div><div className="mt-1 text-xs text-blue-100">INDICADORES TÉCNICOS</div><div className="mt-6 text-xl font-bold">{elegido.nombre}</div><div className="mt-1 text-xs text-blue-100">{periodo || "Ficha individual de desempeño"}</div></div>
                 <div className="mt-3 grid grid-cols-2 gap-2">{PRINCIPALES.map(([label, key]) => <div key={key} className={`rounded-xl p-3 ${evaluacionActual[key] === "bueno" ? "bg-green-100" : evaluacionActual[key] === "malo" ? "bg-red-100" : "bg-white"}`}><div className="text-xs text-slate-500">{label}</div><div className={`mt-1 text-2xl font-bold ${evaluacionActual[key] === "bueno" ? "text-green-800" : evaluacionActual[key] === "malo" ? "text-red-800" : "text-slate-900"}`}>{mostrar(elegido, key)}</div><div className="mt-2 flex flex-wrap gap-1"><button type="button" aria-pressed={evaluacionActual[key] === "bueno"} onClick={() => evaluar(key, "bueno")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "bueno" ? "border-green-700 bg-green-700 text-white" : "border-green-600 text-green-800"}`}>✓ Bueno</button><button type="button" aria-pressed={evaluacionActual[key] === "malo"} onClick={() => evaluar(key, "malo")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "malo" ? "border-red-700 bg-red-700 text-white" : "border-red-600 text-red-800"}`}>✕ Malo</button></div></div>)}</div>
                 <div className="mt-3 space-y-2">{DETALLE.map((key) => <div key={key} className={`rounded-md px-3 py-2 text-sm ${evaluacionActual[key] === "bueno" ? "bg-green-100" : evaluacionActual[key] === "malo" ? "bg-red-100" : "bg-white"}`}><div className="flex items-center justify-between gap-3"><span>{CAMPOS.find((c) => c.key === key)?.label}</span><strong className={evaluacionActual[key] === "bueno" ? "text-green-800" : evaluacionActual[key] === "malo" ? "text-red-800" : ""}>{mostrar(elegido, key)}</strong></div><div className="mt-2 flex gap-1"><button type="button" aria-pressed={evaluacionActual[key] === "bueno"} onClick={() => evaluar(key, "bueno")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "bueno" ? "border-green-700 bg-green-700 text-white" : "border-green-600 text-green-800"}`}>✓ Bueno</button><button type="button" aria-pressed={evaluacionActual[key] === "malo"} onClick={() => evaluar(key, "malo")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "malo" ? "border-red-700 bg-red-700 text-white" : "border-red-600 text-red-800"}`}>✕ Malo</button></div></div>)}</div>
