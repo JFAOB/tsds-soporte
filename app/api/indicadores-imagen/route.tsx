@@ -26,35 +26,29 @@ export async function POST(request: NextRequest) {
     const estados = (data.estados ?? {}) as Record<string, Estado>;
     const valor = (key: string) => String(valores[key] ?? "Sin datos").slice(0, 90);
     return new ImageResponse(
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "#f3f6fb", padding: 30, fontFamily: "Arial, sans-serif", color: "#10243f" }}>
-        <div style={{ display: "flex", flexDirection: "column", background: "#102c50", color: "#ffffff", borderRadius: 22, padding: "32px", height: 235 }}>
-          <div style={{ fontSize: 27, fontWeight: 700 }}>TSDS | DIRECTV</div>
-          <div style={{ fontSize: 20, color: "#bed1e8", marginTop: 6 }}>INDICADORES TÉCNICOS</div>
-          <div style={{ fontSize: nombre.length > 32 ? 28 : 39, fontWeight: 700, marginTop: 27 }}>{nombre}</div>
-          <div style={{ fontSize: 22, color: "#d0e1f1", marginTop: 12 }}>{periodo ? `Período: ${periodo}` : "Ficha individual de desempeño"}</div>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 22 }}>
+      <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", background: "#f3f6fb", padding: "8px", fontFamily: "Arial, sans-serif", color: "#10243f" }}>
+        {periodo ? <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 37, marginBottom: 8, fontSize: 20, fontWeight: 700, color: "#102c50" }}>{periodo}</div> : null}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
           {principales.map((key) => {
             const colores = paleta(estados[key]);
-            return <div key={key} style={{ display: "flex", flexDirection: "column", width: 423, height: 132, borderRadius: 16, padding: "20px 23px", background: colores.fondo }}>
-              <div style={{ fontSize: 21, color: "#667b93" }}>{etiquetas[key]}</div>
-              <div style={{ fontSize: valor(key).length > 16 ? 28 : 45, fontWeight: 700, marginTop: 13, color: colores.tinta }}>{valor(key)}</div>
+            return <div key={key} style={{ display: "flex", flexDirection: "column", width: 268, height: 84, borderRadius: 12, padding: "12px 15px", background: colores.fondo }}>
+              <div style={{ fontSize: 13, color: "#667b93" }}>{etiquetas[key]}</div>
+              <div style={{ fontSize: valor(key).length > 16 ? 21 : 29, fontWeight: 500, marginTop: 7, color: colores.tinta }}>{valor(key)}</div>
             </div>;
           })}
         </div>
-        <div style={{ display: "flex", marginTop: 28, marginBottom: 15, fontSize: 19, fontWeight: 700, color: "#274765" }}>PRODUCTIVIDAD = MAIN + MIRROR + ADDITIONAL + AT</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+        <div style={{ display: "flex", marginTop: 17, marginBottom: 10, fontSize: 12, fontWeight: 500, color: "#274765" }}>PRODUCTIVIDAD = MAIN + MIRROR + ADDITIONAL + AT</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {detalle.map((key) => {
             const colores = paleta(estados[key]);
-            return <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, padding: "0 20px", background: colores.fondo, borderRadius: 9 }}>
-              <div style={{ fontSize: 22 }}>{etiquetas[key]}</div>
-              <div style={{ fontSize: 25, fontWeight: 700, color: colores.tinta }}>{valor(key)}</div>
+            return <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 42, padding: "0 13px", background: colores.fondo, borderRadius: 8 }}>
+              <div style={{ fontSize: 14 }}>{etiquetas[key]}</div>
+              <div style={{ fontSize: 16, fontWeight: 500, color: colores.tinta }}>{valor(key)}</div>
             </div>;
           })}
         </div>
-        <div style={{ display: "flex", marginTop: "auto", fontSize: 17, color: "#7890a9" }}>TSDS · Informe de desempeño técnico</div>
       </div>,
-      { width: 920, height: 1050 }
+      { width: 570, height: periodo ? 453 : 408 }
     );
   } catch {
     return new Response("No se pudo generar la imagen", { status: 500 });
