@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { read, utils } from "xlsx";
 
-type Venta = { id: number; zona: string; estado: string; plan: string };
+type Venta = { id: number; zona: string; estado: string; plan: string; datos: Record<string, string> };
 type Resumen = { zona: string; agendada: number; instalada: number; total: number; tv: number; net: number };
 const normal = (s: unknown) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toUpperCase();
 const clave = (s: unknown) => normal(s).replace(/[^A-Z0-9]/g, "");
@@ -24,7 +24,7 @@ function csv(texto: string): Record<string, unknown>[] {
 function importarFilas(filas: Record<string, unknown>[]): Venta[] {
   return filas.map((fila, id) => {
     const valor = (col: string) => Object.entries(fila).find(([k]) => clave(k) === clave(col))?.[1];
-    return { id, zona: normal(valor("ZONA")), estado: normal(valor("ESTADO")), plan: normal(valor("PLAN")) };
+    return { id, zona: normal(valor("ZONA")), estado: normal(valor("ESTADO")), plan: normal(valor("PLAN")), datos: Object.fromEntries(Object.entries(fila).map(([k,v]) => [clave(k), String(v ?? "").trim()])) };
   }).filter((v) => v.zona && (v.estado === "AGENDADA" || v.estado === "INSTALADA"));
 }
 function agrupar(ventas: Venta[], soloInstaladas: boolean): Resumen[] {
@@ -76,6 +76,35 @@ function generarImagen(filas: Resumen[], total: Omit<Resumen,"zona">, solo: bool
   filasDibujo.forEach((f,i)=>pintar(columnas.map(c=>f[c.key]),55+(i+1)*altoFila,false,i===filasDibujo.length-1));
   return canvas;
 }
+const detalleColumnas = [
+  ["NOMBRECLIENTE","NOMBRE CLIENTE",225],["VENDEDOR","VENDEDOR",155],["LOCALIDAD","LOCALIDAD",130],
+  ["ZONA","ZONA",120],["PLAN","PLAN",160],["DECOS","DECOS",65],["TECNICO","TÉCNICO",150],
+  ["FORMADEPAGO","FORMA DE PAGO",130],["MONTO","MONTO",90],["ESTADO","ESTADO",110]
+] as const;
+function imagenDetalle(filas: Venta[], solo: boolean) {
+  const anchos = detalleColumnas.map(c=>c[2]);
+  const ancho = anchos.reduce((a,b)=>a+b,0), altoFila=30, margen=8, titulo=43;
+  const escala = Math.min(1.5, 15000 / Math.max(ancho, titulo + (filas.length+1)*altoFila));
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.round(ancho*escala);canvas.height=Math.round((titulo+(filas.length+1)*altoFila+margen)*escala);
+  const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo generar la imagen");
+  ctx.scale(escala,escala);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,ancho,canvas.height/escala);
+  ctx.fillStyle="#102c50";ctx.font="bold 18px Arial";ctx.fillText(solo?"DETALLE DE VENTAS · SOLO INSTALADAS":"DETALLE DE VENTAS",10,28);
+  const pintar=(valores:string[],i:number,encabezado:boolean)=>{
+    let x=0;const y=titulo+i*altoFila;
+    valores.forEach((valor,j)=>{
+      ctx.fillStyle=encabezado?"#d6eaf5":i%2===0?"#f3f7fb":"#ffffff";
+      ctx.fillRect(x,y,anchos[j],altoFila);ctx.strokeStyle="#64748b";ctx.lineWidth=.8;ctx.strokeRect(x+.4,y+.4,anchos[j],altoFila);
+      ctx.fillStyle=valor==="INSTALADA"?"#b91c1c":"#10243f";ctx.font=encabezado?"bold 11px Arial":"11px Arial";
+      ctx.textBaseline="middle";ctx.textAlign="center";
+      const texto=valor.length>30?valor.slice(0,29)+"…":valor;
+      ctx.fillText(texto,x+anchos[j]/2,y+altoFila/2,anchos[j]-7);x+=anchos[j];
+    });
+  };
+  pintar(detalleColumnas.map(c=>c[1]),0,true);
+  filas.forEach((fila,i)=>pintar(detalleColumnas.map(([key])=>key==="ZONA"?fila.zona:key==="ESTADO"?fila.estado:key==="PLAN"?fila.plan:fila.datos[key]??""),i+1,false));
+  return canvas;
+}
 export default function ResumenVentasPage() {
   const [ventas,setVentas]=useState<Venta[]>([]);
   const [solo,setSolo]=useState(false);
@@ -83,13 +112,17 @@ export default function ResumenVentasPage() {
   const [pegado,setPegado]=useState("");
   const archivoRef=useRef<HTMLInputElement>(null);
   const resumen=useMemo(()=>agrupar(ventas,solo),[ventas,solo]);
+  const ventasFiltradas=useMemo(()=>ventas.filter(v=>!solo||v.estado==="INSTALADA"),[ventas,solo]);
   const totales=useMemo(()=>resumen.reduce((a,f)=>({agendada:a.agendada+f.agendada,instalada:a.instalada+f.instalada,total:a.total+f.total,tv:a.tv+f.tv,net:a.net+f.net}),{agendada:0,instalada:0,total:0,tv:0,net:0}),[resumen]);
   const cargar=(filas:Record<string,unknown>[])=>{const v=importarFilas(filas);setVentas(v);setMensaje(v.length?`Se importaron ${v.length} ventas AGENDADAS/INSTALADAS.`:"No se encontraron filas válidas. Revisa ZONA, ESTADO y PLAN.");};
   const archivo=async(file?:File)=>{if(!file)return;try{const bytes=await file.arrayBuffer();if(/\.csv$/i.test(file.name)){const a=new Uint8Array(bytes);const texto=a[0]===255&&a[1]===254?new TextDecoder("utf-16le").decode(a):new TextDecoder("utf-8").decode(a);cargar(csv(texto));}else{const libro=read(bytes,{type:"array"});const hoja=libro.Sheets[libro.SheetNames[0]];cargar(utils.sheet_to_json<Record<string,unknown>>(hoja,{defval:"",raw:false}));}}catch(e){setMensaje(e instanceof Error?e.message:"No se pudo leer el archivo.");}};
   const png=()=>new Promise<Blob>((resolve,reject)=>generarImagen(resumen,totales,solo).toBlob(blob=>blob?resolve(blob):reject(Error("Error generando PNG")),"image/png"));
+  const detallePng=()=>new Promise<Blob>((resolve,reject)=>imagenDetalle(ventasFiltradas,solo).toBlob(blob=>blob?resolve(blob):reject(Error("Error generando detalle")),"image/png"));
+  const copiarDetalle=async()=>{try{const blob=await detallePng();await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);setMensaje("Imagen del detalle copiada.");}catch(e){setMensaje(e instanceof Error?`No se pudo copiar el detalle: ${e.message}`:"No se pudo copiar.");}};
+  const descargarDetalle=async()=>{try{const blob=await detallePng();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="TSDS-detalle-ventas.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);setMensaje("Detalle descargado.");}catch(e){setMensaje(e instanceof Error?e.message:"No se pudo descargar el detalle.");}};
   const copiar=async()=>{try{const blob=await png();await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);setMensaje("Imagen copiada. Pégala en WhatsApp.");}catch(e){setMensaje(e instanceof Error?`No se pudo copiar: ${e.message}`:"No se pudo copiar.");}};
   const descargar=async()=>{try{const blob=await png();const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="TSDS-resumen-ventas.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);setMensaje("PNG descargado.");}catch(e){setMensaje(e instanceof Error?e.message:"No se pudo descargar.");}};
-  const actualizar=(id:number,key:"zona"|"estado"|"plan",valor:string)=>setVentas(actual=>actual.map(v=>v.id===id?{...v,[key]:normal(valor)}:v));
+  const actualizar=(id:number,key:"zona"|"estado"|"plan",valor:string)=>setVentas(actual=>actual.map(v=>v.id===id?{...v,[key]:normal(valor),datos:{...v.datos,[clave(key)]:normal(valor)}}:v));
   return <main className="min-h-screen bg-slate-100 px-4 py-7 text-slate-900"><div className="mx-auto max-w-6xl space-y-5">
     <header className="flex items-center justify-between gap-4 rounded-xl bg-[#102c50] p-5 text-white"><div><h1 className="text-xl font-bold">TSDS · Resumen de Ventas</h1><p className="text-sm text-blue-100">Resumen automático por zona, estado y tipo de plan</p></div><Link href="/" className="rounded-lg border border-white/50 px-3 py-2 text-sm">Inicio</Link></header>
     <section className="rounded-xl border border-slate-300 bg-white p-4"><h2 className="mb-3 font-bold">1. Importar base de ventas</h2><input ref={archivoRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e=>void archivo(e.target.files?.[0])}/><button onClick={()=>archivoRef.current?.click()} className="rounded-lg bg-[#123960] px-4 py-2 font-semibold text-white">Subir Excel / CSV</button><p className="my-2 text-xs text-slate-500">También puedes pegar la tabla copiada desde Excel.</p><textarea className="w-full rounded-lg border border-slate-300 p-2 text-sm" rows={3} value={pegado} onChange={e=>setPegado(e.target.value)} placeholder="ZONA    ESTADO    PLAN..."/><button onClick={()=>cargar(csv(pegado))} className="mt-2 rounded-lg border border-[#123960] px-4 py-2 text-sm font-semibold">Procesar tabla pegada</button></section>
@@ -99,6 +132,11 @@ export default function ResumenVentasPage() {
       {mensaje&&<p role="status" className="mt-3 text-sm text-slate-600">{mensaje}</p>}
     </section>
     {ventas.length>0&&<section className="rounded-xl border border-slate-300 bg-white p-4"><h2 className="font-bold">3. Editar registros importados</h2><p className="mb-3 text-xs text-slate-500">Cambia ZONA, ESTADO o PLAN y el resumen se actualizará automáticamente. Se importan solo AGENDADAS e INSTALADAS.</p><div className="max-h-80 overflow-auto"><table className="w-full min-w-[620px] text-sm"><thead className="sticky top-0 bg-slate-100"><tr><th className="border p-2">ZONA</th><th className="border p-2">ESTADO</th><th className="border p-2">PLAN</th><th className="border p-2">Acción</th></tr></thead><tbody>{ventas.map(v=><tr key={v.id}><td className="border p-1"><input className="w-full p-1" value={v.zona} onChange={e=>actualizar(v.id,"zona",e.target.value)}/></td><td className="border p-1"><select className="w-full p-1" value={v.estado} onChange={e=>actualizar(v.id,"estado",e.target.value)}><option>AGENDADA</option><option>INSTALADA</option></select></td><td className="border p-1"><input className="w-full p-1" value={v.plan} onChange={e=>actualizar(v.id,"plan",e.target.value)}/></td><td className="border p-1 text-center"><button className="rounded border border-red-300 px-2 py-1 text-red-700" onClick={()=>setVentas(a=>a.filter(x=>x.id!==v.id))}>Eliminar</button></td></tr>)}</tbody></table></div></section>}
+    {ventas.length>0&&<section className="rounded-xl border border-slate-300 bg-white p-4">
+      <h2 className="font-bold">4. Imagen de la base de ventas</h2>
+      <p className="my-2 text-sm text-slate-600">Incluye las 10 columnas de la tabla original. Respeta las ediciones y el filtro de solo instaladas. Registros en imagen: {ventasFiltradas.length}.</p>
+      <div className="flex flex-wrap gap-2"><button onClick={()=>void copiarDetalle()} className="rounded-lg bg-[#123960] px-4 py-2 font-semibold text-white">Copiar imagen de la primera tabla</button><button onClick={()=>void descargarDetalle()} className="rounded-lg border border-[#123960] px-4 py-2 font-semibold text-[#123960]">Descargar detalle PNG</button></div>
+    </section>}
     <p className="text-xs text-slate-500">Clasificación: BUNDLE/DGO = TV + NET · ONLYNET = NET · TV = TV. El filtro de instaladas también recalcula TV y NET.</p>
   </div></main>;
 }
