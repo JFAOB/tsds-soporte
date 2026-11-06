@@ -9,7 +9,6 @@ type Fila = Record<string, unknown>;
 type Tecnico = { nombre: string; indicadores: Record<string, string> };
 
 const CAMPOS = [
-  { key: "calificacion", label: "Calificación (SIN - 3/3)", aliases: ["Calificación (SIN - 3/3)"], pct: false },
   { key: "main", label: "Main", aliases: ["Main"], pct: false },
   { key: "mirror", label: "Mirror to GA", aliases: ["Mirror to GA"], pct: false },
   { key: "additional", label: "Additional", aliases: ["Additional"], pct: false },
@@ -84,7 +83,17 @@ function tablaMarkdown(texto: string): Fila[] {
   });
 }
 
+function productividad(tecnico: Tecnico) {
+  const keys = ["main", "mirror", "additional", "at"];
+  const valores = keys.map((key) => tecnico.indicadores[key]?.trim() ?? "");
+  if (valores.every((valor) => !valor)) return "Sin datos";
+  const numeros = valores.map((valor) => valor ? Number(valor.replace(",", ".")) : 0);
+  if (numeros.some((numero) => !Number.isFinite(numero))) return "Sin datos";
+  return String(numeros.reduce((total, numero) => total + numero, 0));
+}
+
 const mostrar = (tecnico: Tecnico, key: string) => {
+  if (key === "productividad") return productividad(tecnico);
   const campo = CAMPOS.find((c) => c.key === key);
   const valor = tecnico.indicadores[key] || "";
   return campo?.pct ? porcentaje(valor) : (valor || "Sin datos");
@@ -112,20 +121,14 @@ function crearCanvas(tecnico: Tecnico, periodo: string) {
   txt("INDICADORES TÉCNICOS", 62, 121, 20, 600, "#bed1e8");
   txt(tecnico.nombre, 62, 195, encajar(tecnico.nombre, 782, 41, 700), 700, "#ffffff");
   txt(periodo ? `Período: ${periodo}` : "Ficha individual de desempeño", 62, 243, 23, 400, "#d0e1f1");
-  const kpis = [["Calificación", mostrar(tecnico, "calificacion")], ["SIN30", mostrar(tecnico, "sin30")], ["Encuesta 3/3", mostrar(tecnico, "tres")], ["Adherencia GO", mostrar(tecnico, "adherencia")]];
+  const kpis = [["PRODUCTIVIDAD", mostrar(tecnico, "productividad")], ["SIN30", mostrar(tecnico, "sin30")], ["Encuesta 3/3", mostrar(tecnico, "tres")], ["Adherencia GO", mostrar(tecnico, "adherencia")]];
   kpis.forEach(([label, value], i) => {
     const x = 30 + (i % 2) * 438; const y = 348 + Math.floor(i / 2) * 151;
     round(x, y, 422, 135, 17, "#ffffff");
     txt(label, x + 23, y + 40, 23, 500, "#667b93");
     txt(value, x + 23, y + 99, encajar(value, 370, 49, 700), 700);
   });
-  txt("DETALLE OPERACIONAL", 40, 695, 24, 700, "#274765");
-  ["main", "mirror", "additional", "at"].forEach((key, i) => {
-    const x = 30 + i * 219;
-    round(x, 721, 203, 120, 14, "#e0e9f3");
-    txt(mostrar(tecnico, key), x + 17, 773, 33, 700);
-    txt(CAMPOS.find((c) => c.key === key)?.label || key, x + 17, 812, 18, 500, "#4b6380");
-  });
+  txt("PRODUCTIVIDAD = MAIN + MIRROR + ADDITIONAL + AT", 40, 695, 21, 700, "#274765");
   const detalle = ["funcionamiento", "plazo", "go", "encuestas"];
   detalle.forEach((key, i) => {
     const y = 880 + i * 63;
@@ -223,8 +226,7 @@ export default function IndicadoresClient() {
               <h2 className="mb-3 text-lg font-semibold">3. Vista previa individual</h2>
               {elegido ? <div className="overflow-hidden rounded-xl bg-slate-100 p-3">
                 <div className="rounded-xl bg-[#102c50] p-5 text-white"><div className="text-sm font-bold">TSDS | DIRECTV</div><div className="mt-1 text-xs text-blue-100">INDICADORES TÉCNICOS</div><div className="mt-6 text-xl font-bold">{elegido.nombre}</div><div className="mt-1 text-xs text-blue-100">{periodo || "Ficha individual de desempeño"}</div></div>
-                <div className="mt-3 grid grid-cols-2 gap-2">{[["Calificación","calificacion"],["SIN30","sin30"],["Encuesta 3/3","tres"],["Adherencia GO","adherencia"]].map(([label, key]) => <div key={key} className="rounded-xl bg-white p-3"><div className="text-xs text-slate-500">{label}</div><div className="mt-1 text-2xl font-bold">{mostrar(elegido, key)}</div></div>)}</div>
-                <h3 className="mt-4 text-sm font-bold">DETALLE OPERACIONAL</h3><div className="mt-2 grid grid-cols-4 gap-1">{["main","mirror","additional","at"].map((key) => <div key={key} className="rounded-lg bg-blue-100 p-2 text-center"><div className="text-lg font-bold">{mostrar(elegido, key)}</div><div className="break-words text-[10px]">{CAMPOS.find((c) => c.key === key)?.label}</div></div>)}</div>
+                <div className="mt-3 grid grid-cols-2 gap-2">{[["PRODUCTIVIDAD","productividad"],["SIN30","sin30"],["Encuesta 3/3","tres"],["Adherencia GO","adherencia"]].map(([label, key]) => <div key={key} className="rounded-xl bg-white p-3"><div className="text-xs text-slate-500">{label}</div><div className="mt-1 text-2xl font-bold">{mostrar(elegido, key)}</div></div>)}</div>
                 <div className="mt-3 space-y-1">{["funcionamiento","plazo","go","encuestas"].map((key) => <div key={key} className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"><span>{CAMPOS.find((c) => c.key === key)?.label}</span><strong>{mostrar(elegido, key)}</strong></div>)}</div>
               </div> : <div className="rounded-xl bg-slate-100 p-12 text-center text-slate-500">Carga una tabla para visualizar la ficha del técnico.</div>}
               <div className="mt-4 grid grid-cols-2 gap-2"><button disabled={!elegido} onClick={() => void copiar()} className="rounded-xl bg-[#123960] p-3 font-bold text-white disabled:opacity-40">Copiar imagen</button><button disabled={!elegido} onClick={() => void descargar()} className="rounded-xl border border-[#123960] p-3 font-bold text-[#123960] disabled:opacity-40">Descargar PNG</button></div>
