@@ -103,7 +103,12 @@ function imagenDetalle(filas: Venta[]) {
     });
   };
   pintar(detalleColumnas.map(c=>c[1]),0,true);
-  filas.forEach((fila,i)=>pintar(detalleColumnas.map(([key])=>key==="ZONA"?fila.zona:key==="ESTADO"?fila.estado:key==="PLAN"?fila.plan:fila.datos[key]??""),i+1,false));
+  const ordenadas = [...filas].sort((a,b) =>
+    (a.datos.NOMBRECLIENTE ?? "").localeCompare(b.datos.NOMBRECLIENTE ?? "", "es", {sensitivity:"base"}) ||
+    (a.datos.VENDEDOR ?? "").localeCompare(b.datos.VENDEDOR ?? "", "es", {sensitivity:"base"}) ||
+    a.zona.localeCompare(b.zona, "es", {sensitivity:"base"})
+  );
+  ordenadas.forEach((fila,i)=>pintar(detalleColumnas.map(([key])=>key==="ZONA"?fila.zona:key==="ESTADO"?fila.estado:key==="PLAN"?fila.plan:fila.datos[key]??""),i+1,false));
   return canvas;
 }
 export default function ResumenVentasPage() {
