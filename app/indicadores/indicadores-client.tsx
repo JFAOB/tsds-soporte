@@ -7,6 +7,10 @@ import { read, utils } from "xlsx";
 
 type Fila = Record<string, unknown>;
 type Tecnico = { nombre: string; indicadores: Record<string, string> };
+type Evaluacion = "bueno" | "malo";
+type Evaluaciones = Record<number, Record<string, Evaluacion>>;
+const PRINCIPALES = [["PRODUCTIVIDAD", "productividad"], ["SIN30", "sin30"], ["Encuesta 3/3", "tres"], ["Adherencia GO", "adherencia"]];
+const DETALLE = ["funcionamiento", "plazo", "go", "encuestas"];
 
 const CAMPOS = [
   { key: "main", label: "Main", aliases: ["Main"], pct: false },
@@ -99,7 +103,7 @@ const mostrar = (tecnico: Tecnico, key: string) => {
   return campo?.pct ? porcentaje(valor) : (valor || "Sin datos");
 };
 
-function crearCanvas(tecnico: Tecnico, periodo: string) {
+function crearCanvas(tecnico: Tecnico, periodo: string, evaluaciones: Record<string, Evaluacion>) {
   const canvas = document.createElement("canvas");
   canvas.width = 920; canvas.height = 1190;
   const ctx = canvas.getContext("2d");
@@ -121,21 +125,23 @@ function crearCanvas(tecnico: Tecnico, periodo: string) {
   txt("INDICADORES TÉCNICOS", 62, 121, 20, 600, "#bed1e8");
   txt(tecnico.nombre, 62, 195, encajar(tecnico.nombre, 782, 41, 700), 700, "#ffffff");
   txt(periodo ? `Período: ${periodo}` : "Ficha individual de desempeño", 62, 243, 23, 400, "#d0e1f1");
-  const kpis = [["PRODUCTIVIDAD", mostrar(tecnico, "productividad")], ["SIN30", mostrar(tecnico, "sin30")], ["Encuesta 3/3", mostrar(tecnico, "tres")], ["Adherencia GO", mostrar(tecnico, "adherencia")]];
-  kpis.forEach(([label, value], i) => {
+  const kpis = PRINCIPALES.map(([label, key]) => [label, key, mostrar(tecnico, key)]);
+  kpis.forEach(([label, key, value], i) => {
     const x = 30 + (i % 2) * 438; const y = 348 + Math.floor(i / 2) * 151;
-    round(x, y, 422, 135, 17, "#ffffff");
+    const estado = evaluaciones[key];
+    round(x, y, 422, 135, 17, estado === "bueno" ? "#dcfce7" : estado === "malo" ? "#fee2e2" : "#ffffff");
     txt(label, x + 23, y + 40, 23, 500, "#667b93");
-    txt(value, x + 23, y + 99, encajar(value, 370, 49, 700), 700);
+    txt(value, x + 23, y + 99, encajar(value, 370, 49, 700), 700, estado === "bueno" ? "#166534" : estado === "malo" ? "#991b1b" : "#10243f");
   });
   txt("PRODUCTIVIDAD = MAIN + MIRROR + ADDITIONAL + AT", 40, 695, 21, 700, "#274765");
-  const detalle = ["funcionamiento", "plazo", "go", "encuestas"];
+  const detalle = DETALLE;
   detalle.forEach((key, i) => {
     const y = 880 + i * 63;
-    round(30, y - 36, 860, 57, 8, i % 2 ? "#e8eef6" : "#ffffff");
+    const estado = evaluaciones[key];
+    round(30, y - 36, 860, 57, 8, estado === "bueno" ? "#dcfce7" : estado === "malo" ? "#fee2e2" : i % 2 ? "#e8eef6" : "#ffffff");
     txt(CAMPOS.find((c) => c.key === key)?.label || key, 48, y, 23);
     const valor = mostrar(tecnico, key);
-    ctx.font = "700 25px Arial"; txt(valor, 869 - ctx.measureText(valor).width, y, 25, 700);
+    ctx.font = "700 25px Arial"; txt(valor, 869 - ctx.measureText(valor).width, y, 25, 700, estado === "bueno" ? "#166534" : estado === "malo" ? "#991b1b" : "#10243f");
   });
   txt("TSDS · Informe de desempeño técnico", 40, 1165, 17, 500, "#7890a9");
   return canvas;
@@ -148,13 +154,16 @@ export default function IndicadoresClient() {
   const [periodo, setPeriodo] = useState("");
   const [pegado, setPegado] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [evaluaciones, setEvaluaciones] = useState<Evaluaciones>({});
+  const evaluacionActual = evaluaciones[indice] ?? {};
+  const evaluar = (key: string, estado: Evaluacion) => setEvaluaciones((actual) => ({ ...actual, [indice]: { ...actual[indice], ...(actual[indice]?.[key] === estado ? { [key]: undefined } : { [key]: estado }) } }));
   const archivoRef = useRef<HTMLInputElement>(null);
   const elegido = tecnicos[indice];
   const encontrados = useMemo(() => tecnicos.map((t, i) => ({ ...t, i })).filter((t) => normalizar(t.nombre).includes(normalizar(busqueda))), [tecnicos, busqueda]);
 
   const importar = (filas: Fila[]) => {
     const lista = transformar(filas);
-    setTecnicos(lista); setIndice(0); setBusqueda("");
+    setTecnicos(lista); setIndice(0); setBusqueda(""); setEvaluaciones({});
     setMensaje(lista.length ? `Se cargaron ${lista.length} técnicos.` : "No se detectaron técnicos. Verifica los encabezados.");
   };
   const archivo = async (file?: File) => {
@@ -174,7 +183,7 @@ export default function IndicadoresClient() {
   };
   const imagenBlob = async () => {
     if (!elegido) throw new Error("Selecciona un técnico");
-    const canvas = crearCanvas(elegido, periodo);
+    const canvas = crearCanvas(elegido, periodo, evaluacionActual);
     return await new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("No se pudo generar PNG")), "image/png"));
   };
   const copiar = async () => {
@@ -226,8 +235,8 @@ export default function IndicadoresClient() {
               <h2 className="mb-3 text-lg font-semibold">3. Vista previa individual</h2>
               {elegido ? <div className="overflow-hidden rounded-xl bg-slate-100 p-3">
                 <div className="rounded-xl bg-[#102c50] p-5 text-white"><div className="text-sm font-bold">TSDS | DIRECTV</div><div className="mt-1 text-xs text-blue-100">INDICADORES TÉCNICOS</div><div className="mt-6 text-xl font-bold">{elegido.nombre}</div><div className="mt-1 text-xs text-blue-100">{periodo || "Ficha individual de desempeño"}</div></div>
-                <div className="mt-3 grid grid-cols-2 gap-2">{[["PRODUCTIVIDAD","productividad"],["SIN30","sin30"],["Encuesta 3/3","tres"],["Adherencia GO","adherencia"]].map(([label, key]) => <div key={key} className="rounded-xl bg-white p-3"><div className="text-xs text-slate-500">{label}</div><div className="mt-1 text-2xl font-bold">{mostrar(elegido, key)}</div></div>)}</div>
-                <div className="mt-3 space-y-1">{["funcionamiento","plazo","go","encuestas"].map((key) => <div key={key} className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm"><span>{CAMPOS.find((c) => c.key === key)?.label}</span><strong>{mostrar(elegido, key)}</strong></div>)}</div>
+                <div className="mt-3 grid grid-cols-2 gap-2">{PRINCIPALES.map(([label, key]) => <div key={key} className={`rounded-xl p-3 ${evaluacionActual[key] === "bueno" ? "bg-green-100" : evaluacionActual[key] === "malo" ? "bg-red-100" : "bg-white"}`}><div className="text-xs text-slate-500">{label}</div><div className={`mt-1 text-2xl font-bold ${evaluacionActual[key] === "bueno" ? "text-green-800" : evaluacionActual[key] === "malo" ? "text-red-800" : "text-slate-900"}`}>{mostrar(elegido, key)}</div><div className="mt-2 flex flex-wrap gap-1"><button type="button" aria-pressed={evaluacionActual[key] === "bueno"} onClick={() => evaluar(key, "bueno")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "bueno" ? "border-green-700 bg-green-700 text-white" : "border-green-600 text-green-800"}`}>✓ Bueno</button><button type="button" aria-pressed={evaluacionActual[key] === "malo"} onClick={() => evaluar(key, "malo")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "malo" ? "border-red-700 bg-red-700 text-white" : "border-red-600 text-red-800"}`}>✕ Malo</button></div></div>)}</div>
+                <div className="mt-3 space-y-2">{DETALLE.map((key) => <div key={key} className={`rounded-md px-3 py-2 text-sm ${evaluacionActual[key] === "bueno" ? "bg-green-100" : evaluacionActual[key] === "malo" ? "bg-red-100" : "bg-white"}`}><div className="flex items-center justify-between gap-3"><span>{CAMPOS.find((c) => c.key === key)?.label}</span><strong className={evaluacionActual[key] === "bueno" ? "text-green-800" : evaluacionActual[key] === "malo" ? "text-red-800" : ""}>{mostrar(elegido, key)}</strong></div><div className="mt-2 flex gap-1"><button type="button" aria-pressed={evaluacionActual[key] === "bueno"} onClick={() => evaluar(key, "bueno")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "bueno" ? "border-green-700 bg-green-700 text-white" : "border-green-600 text-green-800"}`}>✓ Bueno</button><button type="button" aria-pressed={evaluacionActual[key] === "malo"} onClick={() => evaluar(key, "malo")} className={`rounded-md border px-2 py-1 text-xs font-semibold ${evaluacionActual[key] === "malo" ? "border-red-700 bg-red-700 text-white" : "border-red-600 text-red-800"}`}>✕ Malo</button></div></div>)}</div>
               </div> : <div className="rounded-xl bg-slate-100 p-12 text-center text-slate-500">Carga una tabla para visualizar la ficha del técnico.</div>}
               <div className="mt-4 grid grid-cols-2 gap-2"><button disabled={!elegido} onClick={() => void copiar()} className="rounded-xl bg-[#123960] p-3 font-bold text-white disabled:opacity-40">Copiar imagen</button><button disabled={!elegido} onClick={() => void descargar()} className="rounded-xl border border-[#123960] p-3 font-bold text-[#123960] disabled:opacity-40">Descargar PNG</button></div>
               {mensaje && <p role="status" className="mt-3 text-sm text-slate-600">{mensaje}</p>}
