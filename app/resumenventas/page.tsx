@@ -53,23 +53,16 @@ const columnas: { key: keyof Resumen; titulo: string; color: string }[] = [
 ];
 
 const colores = {azul:"#102c50", azul2:"#173f69", borde:"#b6c6d6", tinta:"#19324b", gris:"#f3f7fb", verde:"#d9f1df", verdeTexto:"#17613b", ambar:"#fff0cd", ambarTexto:"#8b5600"};
-function cabeceraImagen(ctx: CanvasRenderingContext2D, ancho:number, titulo:string, subtitulo:string) {
-  ctx.fillStyle=colores.azul;ctx.fillRect(0,0,ancho,60);
-  ctx.fillStyle="#ffffff";ctx.font="bold 20px Arial";ctx.textAlign="left";ctx.textBaseline="middle";
-  ctx.fillText("TSDS  |  "+titulo,14,25);
-  ctx.fillStyle="#c9dcef";ctx.font="12px Arial";ctx.fillText(subtitulo,15,45);
-}
 function celdaImagen(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,fondo:string) {
   ctx.fillStyle=fondo;ctx.fillRect(x,y,w,h);ctx.strokeStyle=colores.borde;ctx.lineWidth=.75;ctx.strokeRect(x+.4,y+.4,w-.8,h-.8);
 }
 function generarImagen(filas: Resumen[], total: Omit<Resumen,"zona">, ocultarEstados: boolean) {
   const visibles=columnas.filter(c=>!ocultarEstados||(c.key!=="agendada"&&c.key!=="instalada"));
   const anchos=visibles.map(c=>c.key==="zona"?205:c.key==="total"?105:98);
-  const ancho=anchos.reduce((a,b)=>a+b,0), escala=2, filaH=34, inicio=68, alto=inicio+(filas.length+2)*filaH+10;
+  const ancho=anchos.reduce((a,b)=>a+b,0), escala=2, filaH=34, inicio=0, alto=(filas.length+2)*filaH;
   const canvas=document.createElement("canvas");canvas.width=ancho*escala;canvas.height=alto*escala;
   const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo crear la imagen");
   ctx.scale(escala,escala);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,ancho,alto);
-  cabeceraImagen(ctx,ancho,"RESUMEN DE VENTAS","Ventas por zona  ·  Ordenadas por total de mayor a menor");
   const dibujar=(fila:Resumen,y:number,esTotal:boolean)=>{
     let x=0;
     visibles.forEach((c,i)=>{
@@ -98,12 +91,11 @@ const detalleColumnas = [
 ] as const;
 function imagenDetalle(filas:Venta[]) {
   const anchos=detalleColumnas.map(c=>c[2]),ancho=anchos.reduce((a,b)=>a+b,0);
-  const filaH=34, inicio=68, margen=10, alto=inicio+(filas.length+1)*filaH+margen;
+  const filaH=34, inicio=0, alto=(filas.length+1)*filaH;
   const escala=Math.min(1.6,14000/Math.max(ancho,alto));
   const canvas=document.createElement("canvas");canvas.width=Math.round(ancho*escala);canvas.height=Math.round(alto*escala);
   const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo generar la imagen");
   ctx.scale(escala,escala);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,ancho,alto);
-  cabeceraImagen(ctx,ancho,"DETALLE DE VENTAS",filas.length+" registros  ·  Zona A-Z  /  Vendedor A-Z  /  Cliente A-Z");
   const comparar=(a:string,b:string)=>a.localeCompare(b,"es",{sensitivity:"base",numeric:true});
   const ordenadas=[...filas]
     .sort((a,b)=>comparar(a.datos.NOMBRECLIENTE??"",b.datos.NOMBRECLIENTE??""))
