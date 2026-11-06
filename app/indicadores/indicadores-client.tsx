@@ -156,7 +156,12 @@ export default function IndicadoresClient() {
   const [mensaje, setMensaje] = useState("");
   const [evaluaciones, setEvaluaciones] = useState<Evaluaciones>({});
   const evaluacionActual = evaluaciones[indice] ?? {};
-  const evaluar = (key: string, estado: Evaluacion) => setEvaluaciones((actual) => ({ ...actual, [indice]: { ...actual[indice], ...(actual[indice]?.[key] === estado ? { [key]: undefined } : { [key]: estado }) } }));
+  const evaluar = (key: string, estado: Evaluacion) => setEvaluaciones((actual) => {
+    const siguiente = { ...(actual[indice] ?? {}) };
+    if (siguiente[key] === estado) delete siguiente[key];
+    else siguiente[key] = estado;
+    return { ...actual, [indice]: siguiente };
+  });
   const archivoRef = useRef<HTMLInputElement>(null);
   const elegido = tecnicos[indice];
   const encontrados = useMemo(() => tecnicos.map((t, i) => ({ ...t, i })).filter((t) => normalizar(t.nombre).includes(normalizar(busqueda))), [tecnicos, busqueda]);
