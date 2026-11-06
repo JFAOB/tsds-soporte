@@ -51,66 +51,86 @@ const columnas: { key: keyof Resumen; titulo: string; color: string }[] = [
   {key:"tv",titulo:"TV",color:"#56a832"},
   {key:"net",titulo:"NET",color:"#159dd2"},
 ];
+
+const colores = {azul:"#102c50", azul2:"#173f69", borde:"#b6c6d6", tinta:"#19324b", gris:"#f3f7fb", verde:"#d9f1df", verdeTexto:"#17613b", ambar:"#fff0cd", ambarTexto:"#8b5600"};
+function cabeceraImagen(ctx: CanvasRenderingContext2D, ancho:number, titulo:string, subtitulo:string) {
+  ctx.fillStyle=colores.azul;ctx.fillRect(0,0,ancho,60);
+  ctx.fillStyle="#ffffff";ctx.font="bold 20px Arial";ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("TSDS  |  "+titulo,14,25);
+  ctx.fillStyle="#c9dcef";ctx.font="12px Arial";ctx.fillText(subtitulo,15,45);
+}
+function celdaImagen(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,fondo:string) {
+  ctx.fillStyle=fondo;ctx.fillRect(x,y,w,h);ctx.strokeStyle=colores.borde;ctx.lineWidth=.75;ctx.strokeRect(x+.4,y+.4,w-.8,h-.8);
+}
 function generarImagen(filas: Resumen[], total: Omit<Resumen,"zona">, ocultarEstados: boolean) {
-  const visibles = columnas.filter(c => !ocultarEstados || (c.key !== "agendada" && c.key !== "instalada"));
-  const anchos = visibles.map(c => c.key === "zona" ? 205 : c.key === "total" ? 100 : 90);
-  const escala = 2, ancho = anchos.reduce((a,b)=>a+b,0);
-  const altoFila = 43, alto = 55 + (filas.length+2)*altoFila + 12;
-  const canvas = document.createElement("canvas");
-  canvas.width=ancho*escala;canvas.height=alto*escala;
+  const visibles=columnas.filter(c=>!ocultarEstados||(c.key!=="agendada"&&c.key!=="instalada"));
+  const anchos=visibles.map(c=>c.key==="zona"?205:c.key==="total"?105:98);
+  const ancho=anchos.reduce((a,b)=>a+b,0), escala=2, filaH=34, inicio=68, alto=inicio+(filas.length+2)*filaH+10;
+  const canvas=document.createElement("canvas");canvas.width=ancho*escala;canvas.height=alto*escala;
   const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo crear la imagen");
   ctx.scale(escala,escala);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,ancho,alto);
-  ctx.font="bold 19px Arial";ctx.fillStyle="#102c50";ctx.fillText("RESUMEN DE VENTAS",12,32);
-  const filasDibujo: (Resumen | (typeof total & {zona:string}))[] = [...filas,{zona:"TOTAL GENERAL",...total}];
-  const pintar=(valores:(string|number)[], y:number, cabecera:boolean, totalFila:boolean)=>{
+  cabeceraImagen(ctx,ancho,"RESUMEN DE VENTAS","Ventas por zona  ·  Ordenadas por total de mayor a menor");
+  const dibujar=(fila:Resumen,y:number,esTotal:boolean)=>{
     let x=0;
-    valores.forEach((v,i)=>{
-      ctx.fillStyle=cabecera?visibles[i].color:totalFila?"#e5f0f7":visibles[i].key==="tv"?"#e2f3d8":visibles[i].key==="net"?"#d9f1fa":"#ffffff";
-      ctx.fillRect(x,y,anchos[i],altoFila);
-      ctx.strokeStyle="#334155";ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,anchos[i],altoFila);
-      ctx.fillStyle="#10243f";ctx.font=(cabecera||totalFila?"bold ":"")+"15px Arial";
-      ctx.textBaseline="middle";ctx.textAlign=i===0?"left":"center";
-      const texto=String(v);ctx.fillText(texto,x+(i===0?10:anchos[i]/2),y+altoFila/2,anchos[i]-12);x+=anchos[i];
+    visibles.forEach((c,i)=>{
+      const fondo=esTotal?"#dbe9f5":c.key==="tv"?"#e8f5e9":c.key==="net"?"#e6f4fb":i===0?"#f1f6fb":"#ffffff";
+      celdaImagen(ctx,x,y,anchos[i],filaH,fondo);
+      ctx.font=(esTotal||c.key==="zona"||c.key==="total"?"bold ":"")+"14px Arial";
+      ctx.fillStyle=colores.tinta;ctx.textAlign=i===0?"left":"center";ctx.textBaseline="middle";
+      ctx.fillText(String(fila[c.key]),x+(i===0?10:anchos[i]/2),y+filaH/2,anchos[i]-14);
+      x+=anchos[i];
     });
   };
-  pintar(visibles.map(c=>c.titulo),55,true,false);
-  filasDibujo.forEach((f,i)=>pintar(visibles.map(c=>f[c.key]),55+(i+1)*altoFila,false,i===filasDibujo.length-1));
+  let x=0;visibles.forEach((c,i)=>{
+    const fondo=c.key==="tv"?"#348c4c":c.key==="net"?"#1684b6":colores.azul2;
+    celdaImagen(ctx,x,inicio,anchos[i],filaH,fondo);
+    ctx.fillStyle="#ffffff";ctx.font="bold 12px Arial";ctx.textAlign=i===0?"left":"center";ctx.textBaseline="middle";
+    ctx.fillText(c.titulo,x+(i===0?10:anchos[i]/2),inicio+filaH/2,anchos[i]-12);x+=anchos[i];
+  });
+  filas.forEach((f,i)=>dibujar(f,inicio+(i+1)*filaH,false));
+  dibujar({zona:"TOTAL GENERAL",...total},inicio+(filas.length+1)*filaH,true);
   return canvas;
 }
 const detalleColumnas = [
-  ["NOMBRECLIENTE","NOMBRE CLIENTE",225],["VENDEDOR","VENDEDOR",155],["LOCALIDAD","LOCALIDAD",130],
-  ["ZONA","ZONA",120],["PLAN","PLAN",160],["DECOS","DECOS",65],["TECNICO","TÉCNICO",150],
-  ["FORMADEPAGO","FORMA DE PAGO",130],["MONTO","MONTO",90],["ESTADO","ESTADO",110]
+  ["NOMBRECLIENTE","NOMBRE CLIENTE",230],["VENDEDOR","VENDEDOR",160],["LOCALIDAD","LOCALIDAD",130],
+  ["ZONA","ZONA",130],["PLAN","PLAN",180],["DECOS","DECOS",65],["TECNICO","TÉCNICO",155],
+  ["FORMADEPAGO","FORMA DE PAGO",140],["MONTO","MONTO",95],["ESTADO","ESTADO",115]
 ] as const;
-function imagenDetalle(filas: Venta[]) {
-  const anchos = detalleColumnas.map(c=>c[2]);
-  const ancho = anchos.reduce((a,b)=>a+b,0), altoFila=30, margen=8, titulo=43;
-  const escala = Math.min(1.5, 15000 / Math.max(ancho, titulo + (filas.length+1)*altoFila));
-  const canvas=document.createElement("canvas");
-  canvas.width=Math.round(ancho*escala);canvas.height=Math.round((titulo+(filas.length+1)*altoFila+margen)*escala);
+function imagenDetalle(filas:Venta[]) {
+  const anchos=detalleColumnas.map(c=>c[2]),ancho=anchos.reduce((a,b)=>a+b,0);
+  const filaH=34, inicio=68, margen=10, alto=inicio+(filas.length+1)*filaH+margen;
+  const escala=Math.min(1.6,14000/Math.max(ancho,alto));
+  const canvas=document.createElement("canvas");canvas.width=Math.round(ancho*escala);canvas.height=Math.round(alto*escala);
   const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo generar la imagen");
-  ctx.scale(escala,escala);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,ancho,canvas.height/escala);
-  ctx.fillStyle="#102c50";ctx.font="bold 18px Arial";ctx.fillText("DETALLE DE VENTAS",10,28);
-  const pintar=(valores:string[],i:number,encabezado:boolean)=>{
-    let x=0;const y=titulo+i*altoFila;
-    valores.forEach((valor,j)=>{
-      ctx.fillStyle=encabezado?"#d6eaf5":i%2===0?"#f3f7fb":"#ffffff";
-      ctx.fillRect(x,y,anchos[j],altoFila);ctx.strokeStyle="#64748b";ctx.lineWidth=.8;ctx.strokeRect(x+.4,y+.4,anchos[j],altoFila);
-      ctx.fillStyle=valor==="INSTALADA"?"#b91c1c":"#10243f";ctx.font=encabezado?"bold 11px Arial":"11px Arial";
-      ctx.textBaseline="middle";ctx.textAlign="center";
-      const texto=valor.length>30?valor.slice(0,29)+"…":valor;
-      ctx.fillText(texto,x+anchos[j]/2,y+altoFila/2,anchos[j]-7);x+=anchos[j];
+  ctx.scale(escala,escala);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,ancho,alto);
+  cabeceraImagen(ctx,ancho,"DETALLE DE VENTAS",filas.length+" registros  ·  Zona A-Z  /  Vendedor A-Z  /  Cliente A-Z");
+  const comparar=(a:string,b:string)=>a.localeCompare(b,"es",{sensitivity:"base",numeric:true});
+  const ordenadas=[...filas]
+    .sort((a,b)=>comparar(a.datos.NOMBRECLIENTE??"",b.datos.NOMBRECLIENTE??""))
+    .sort((a,b)=>comparar(a.datos.VENDEDOR??"",b.datos.VENDEDOR??""))
+    .sort((a,b)=>comparar(a.zona,b.zona));
+  let x=0;detalleColumnas.forEach((col,i)=>{
+    celdaImagen(ctx,x,inicio,anchos[i],filaH,col[0]==="ESTADO"?"#246b58":col[0]==="ZONA"?"#25577c":colores.azul2);
+    ctx.fillStyle="#ffffff";ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText(col[1],x+anchos[i]/2,inicio+filaH/2,anchos[i]-8);x+=anchos[i];
+  });
+  let anterior="";
+  ordenadas.forEach((fila,i)=>{
+    const nuevaZona=fila.zona!==anterior;anterior=fila.zona;
+    const y=inicio+(i+1)*filaH;let x=0;
+    detalleColumnas.forEach(([key,,w])=>{
+      const valor=String(key==="ZONA"?fila.zona:key==="ESTADO"?fila.estado:key==="PLAN"?fila.plan:fila.datos[key]??"");
+      const estado=key==="ESTADO";
+      const fondo=estado?(fila.estado==="INSTALADA"?colores.verde:colores.ambar):nuevaZona?"#e8f1f9":i%2===0?colores.gris:"#ffffff";
+      celdaImagen(ctx,x,y,w,filaH,fondo);
+      if(nuevaZona){ctx.fillStyle="#47799c";ctx.fillRect(x,y,w,2);}
+      ctx.fillStyle=estado?(fila.estado==="INSTALADA"?colores.verdeTexto:colores.ambarTexto):colores.tinta;
+      ctx.font=(estado||key==="ZONA"?"bold ":"")+"12px Arial";
+      ctx.textAlign=key==="NOMBRECLIENTE"||key==="VENDEDOR"?"left":"center";ctx.textBaseline="middle";
+      ctx.fillText(valor,x+(ctx.textAlign==="left"?8:w/2),y+filaH/2,w-14);
+      x+=w;
     });
-  };
-  pintar(detalleColumnas.map(c=>c[1]),0,true);
-  // Ordenamiento estable: cliente, luego vendedor y finalmente zona.
-  // El resultado final agrupa por ZONA > VENDEDOR > NOMBRE CLIENTE (todos A-Z).
-  const comparar = (a: string, b: string) => a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
-  const ordenadas = [...filas]
-    .sort((a,b) => comparar(a.datos.NOMBRECLIENTE ?? "", b.datos.NOMBRECLIENTE ?? ""))
-    .sort((a,b) => comparar(a.datos.VENDEDOR ?? "", b.datos.VENDEDOR ?? ""))
-    .sort((a,b) => comparar(a.zona, b.zona));
-  ordenadas.forEach((fila,i)=>pintar(detalleColumnas.map(([key])=>key==="ZONA"?fila.zona:key==="ESTADO"?fila.estado:key==="PLAN"?fila.plan:fila.datos[key]??""),i+1,false));
+  });
   return canvas;
 }
 export default function ResumenVentasPage() {
