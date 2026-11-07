@@ -128,6 +128,12 @@ function siguienteDia(value: Date) {
   return result;
 }
 
+function fechaObjetivo(value: Date) {
+  const result = siguienteDia(value);
+  if (soloFecha(value).getDay() === 6) result.setDate(result.getDate() + 1);
+  return result;
+}
+
 function mismoDia(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -164,7 +170,7 @@ function coincidenTecnicos(base: string, detectado: string) {
 
 function armarReportes(ordenes: Orden[], fechaCarga: Date): RegionReporte[] {
   const hoy = soloFecha(fechaCarga);
-  const manana = siguienteDia(hoy);
+  const manana = fechaObjetivo(hoy);
   const backlog = ordenes.filter((orden) => !orden.inicio || soloFecha(orden.inicio) > hoy);
   const regiones = Array.from(new Set(backlog.map((orden) => orden.region))).sort((a, b) => Number(a.match(/R(\d+)/)?.[1] || 99) - Number(b.match(/R(\d+)/)?.[1] || 99));
 
@@ -220,7 +226,7 @@ function crearCanvas(reporte: RegionReporte, fecha: Date) {
   ctx.font = "700 25px Arial";
   ctx.fillText("REPORTE AGENDA TSDS", 45, 52);
   ctx.font = "14px Arial";
-  const fechaTexto = siguienteDia(fecha).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const fechaTexto = fechaObjetivo(fecha).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   ctx.fillText(`${REGIONES[reporte.region] || reporte.region} · ${fechaTexto}`, 45, 79);
 
   let y = 125;
@@ -265,7 +271,7 @@ function crearCanvas(reporte: RegionReporte, fecha: Date) {
   y += 38;
   const totalWo = reporte.tecnicos.reduce((sum, tecnico) => sum + tecnico.wo, 0);
   const totalClientes = reporte.tecnicos.reduce((sum, tecnico) => sum + tecnico.clientes, 0);
-  drawTable("TÉCNICOS · DÍA SIGUIENTE", ["Técnico", "WO", "Clientes", "Comuna / ruta"], [
+  drawTable("TÉCNICOS · FECHA OBJETIVO", ["Técnico", "WO", "Clientes", "Comuna / ruta"], [
     ...reporte.tecnicos.map((t) => [t.nombre.toUpperCase(), String(t.wo), String(t.clientes), t.ruta]),
     ["TOTAL", String(totalWo), String(totalClientes), ""],
   ], [300, 70, 90, 450]);
@@ -354,7 +360,7 @@ export default function AgendaClient() {
         <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:py-9">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-100">Operaciones TSDS</p>
           <h1 className="mt-1 text-2xl font-black sm:text-3xl">Generador de agenda</h1>
-          <p className="mt-2 max-w-3xl text-sm text-sky-50">Carga el backlog, revisa la agenda del día siguiente, edita rutas y descarga una imagen por región.</p>
+          <p className="mt-2 max-w-3xl text-sm text-sky-50">Carga el backlog, revisa la agenda del próximo día (sábado → lunes), edita rutas y descarga una imagen por región.</p>
         </div>
       </section>
 
@@ -374,12 +380,12 @@ export default function AgendaClient() {
           <>
             <nav className="mt-4 flex gap-1.5 overflow-x-auto pb-1">{reportes.map((item) => <button key={item.region} type="button" onClick={() => setRegionActiva(item.region)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold ${item.region === reporte.region ? "bg-sky-700 text-white" : "border border-slate-300 bg-white text-slate-600"}`}>{REGIONES[item.region] || item.region}</button>)}</nav>
             <section className="mt-2 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
-              <div className="flex flex-col gap-2 border-b border-slate-300 p-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-black">{REGIONES[reporte.region] || reporte.region}</h2><p className="text-xs text-slate-500">Agenda del {siguienteDia(fechaCarga).toLocaleDateString("es-CL")}</p></div><button type="button" onClick={() => void copiarImagen()} className={`rounded-lg px-4 py-2 text-sm font-bold text-white transition ${copiado ? "bg-emerald-600" : "bg-sky-700 hover:bg-sky-800"}`}>{copiado ? "✓ Imagen copiada" : "Copiar imagen"}</button></div>
+              <div className="flex flex-col gap-2 border-b border-slate-300 p-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-black">{REGIONES[reporte.region] || reporte.region}</h2><p className="text-xs text-slate-500">Agenda del {fechaObjetivo(fechaCarga).toLocaleDateString("es-CL")}</p></div><button type="button" onClick={() => void copiarImagen()} className={`rounded-lg px-4 py-2 text-sm font-bold text-white transition ${copiado ? "bg-emerald-600" : "bg-sky-700 hover:bg-sky-800"}`}>{copiado ? "✓ Imagen copiada" : "Copiar imagen"}</button></div>
               <div className="p-3">
                 <h3 className="mb-2 text-base font-black">Backlog por comuna</h3>
                 <div className="overflow-x-auto"><table className="w-full min-w-[680px] border-collapse text-xs"><thead className="bg-sky-100 text-sky-950"><tr><th className="border border-slate-400 p-2 text-left">Comuna</th><th className="border border-slate-400 p-2 text-center">Agendada</th><th className="border border-slate-400 p-2 text-center">Despachada</th><th className="border border-slate-400 p-2 text-center">Sin agendar</th><th className="border border-slate-400 p-2 text-center">Total</th></tr></thead><tbody>{reporte.comunas.map((comuna) => <tr key={comuna.comuna} className="even:bg-slate-50"><td className="border border-slate-300 p-1.5 font-semibold">{comuna.comuna}</td><td className="border border-slate-300 p-1.5 text-center">{comuna.agendada || ""}</td><td className="border border-slate-300 p-1.5 text-center">{comuna.despachada || ""}</td><td className="border border-slate-300 p-1.5 text-center">{comuna.sinAgendar || ""}</td><td className="border border-slate-300 p-1.5 text-center font-black">{comuna.total}</td></tr>)}<tr className="bg-sky-700 font-black text-white"><td className="border border-sky-900 p-2">TOTAL</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.agendada}</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.despachada}</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.sinAgendar}</td><td className="border border-sky-900 p-2 text-center">{reporte.totales.total}</td></tr></tbody></table></div>
 
-                <div className="mb-2 mt-4 flex items-center justify-between"><h3 className="text-base font-black">Técnicos · día siguiente</h3><button type="button" onClick={agregarTecnico} className="rounded-lg border border-sky-300 px-2.5 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-50">+ Agregar técnico</button></div>
+                <div className="mb-2 mt-4 flex items-center justify-between"><h3 className="text-base font-black">Técnicos · fecha objetivo</h3><button type="button" onClick={agregarTecnico} className="rounded-lg border border-sky-300 px-2.5 py-1.5 text-xs font-bold text-sky-700 hover:bg-sky-50">+ Agregar técnico</button></div>
                 <div className="overflow-x-auto"><table className="w-full min-w-[820px] border-collapse text-xs"><thead className="bg-sky-100 text-sky-950"><tr><th className="border border-slate-400 p-2 text-left">Técnico</th><th className="border border-slate-400 p-2 text-center">WO</th><th className="border border-slate-400 p-2 text-center">Clientes</th><th className="border border-slate-400 p-2 text-left">Comuna / ruta</th><th className="w-10 border border-slate-400"></th></tr></thead><tbody>{reporte.tecnicos.map((tecnico) => <tr key={tecnico.id} className="even:bg-slate-50"><td className="border border-slate-300 p-1"><input value={tecnico.nombre} onChange={(event) => editarTecnico(tecnico.id, "nombre", event.target.value)} className="w-full border-0 bg-transparent px-1 py-1 font-bold outline-none focus:bg-white" /></td><td className="border border-slate-300 p-1"><input type="number" min="0" value={tecnico.wo} onChange={(event) => editarTecnico(tecnico.id, "wo", event.target.value)} className="w-16 rounded border border-slate-300 bg-white px-1 py-1 text-center" /></td><td className="border border-slate-300 p-1"><input type="number" min="0" value={tecnico.clientes} onChange={(event) => editarTecnico(tecnico.id, "clientes", event.target.value)} className="w-16 rounded border border-slate-300 bg-white px-1 py-1 text-center" /></td><td className="border border-slate-300 p-1"><input value={tecnico.ruta} onChange={(event) => editarTecnico(tecnico.id, "ruta", event.target.value)} className="w-full border-0 bg-transparent px-1 py-1 outline-none focus:bg-white" /></td><td className="border border-slate-300 text-center"><button type="button" onClick={() => eliminarTecnico(tecnico.id)} className="text-base font-bold text-red-500" aria-label={`Eliminar ${tecnico.nombre}`}>×</button></td></tr>)}<tr className="bg-sky-700 font-black text-white"><td className="border border-sky-900 p-2">TOTAL</td><td className="border border-sky-900 p-2 text-center">{reporte.tecnicos.reduce((sum, item) => sum + item.wo, 0)}</td><td className="border border-sky-900 p-2 text-center">{reporte.tecnicos.reduce((sum, item) => sum + item.clientes, 0)}</td><td className="border border-sky-900" colSpan={2}></td></tr></tbody></table></div>
               </div>
             </section>
