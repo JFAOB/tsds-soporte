@@ -3,7 +3,7 @@ import {cookies} from "next/headers";
 export const HUB_COOKIE="tsds_hub_session";
 const password=()=>process.env.HUB_PASSWORD??"";
 const secret=()=>process.env.HUB_SESSION_SECRET??"";
-export const configured=()=>password().length>=12&&secret().length>=32;
+export const configured=()=>password().length>=8&&secret().length>=32;
 export function matches(input:string){if(!configured())return false;return timingSafeEqual(createHash("sha256").update(input).digest(),createHash("sha256").update(password()).digest());}
 const sign=(data:string)=>createHmac("sha256",secret()).update(data).digest("hex");
 export function token(){const data=`${Math.floor(Date.now()/1000)+43200}.${randomBytes(16).toString("hex")}`;return `${data}.${sign(data)}`;}
