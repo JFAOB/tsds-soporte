@@ -5,6 +5,7 @@ const inicial:Enlace[]=[
 {id:"1",nombre:"Resumen de ventas",url:"/resumenventas",categoria:"Ventas",favorito:true},
 {id:"2",nombre:"Ingreso de ventas",url:"/ingresoventa",categoria:"Ventas",favorito:true},
 {id:"3",nombre:"Indicadores",url:"/indicadores",categoria:"Reportes",favorito:true},
+{id:"13",nombre:"BacklogAgenda",url:"https://www.tsds.cl/agenda",categoria:"Operaciones",favorito:true},
 {id:"4",nombre:"Backoffice",url:"/backoffice",categoria:"Operaciones",favorito:false},
 {id:"5",nombre:"Postvisita",url:"/postvisita",categoria:"Operaciones",favorito:false},
 {id:"6",nombre:"Cobertura TSDS",url:"/coberturatsds",categoria:"Operaciones",favorito:false},
