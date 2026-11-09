@@ -270,6 +270,12 @@ export default function Home() {
           Centro de Soporte
         </h1>
 
+
+        <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+          <p className="mb-1 font-bold">⚠️ Aviso importante: falla masiva DIRECTV</p>
+          <p>Informamos que DIRECTV presenta una falla masiva desde la mañana del domingo 8 de noviembre. El inconveniente se encuentra en proceso de solución. Agradecemos su comprensión y lamentamos las molestias ocasionadas.</p>
+        </div>
+
         <button
           onClick={() => setMostrarFormulario(true)}
           className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-4 rounded-lg transition"
