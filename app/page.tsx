@@ -271,9 +271,12 @@ export default function Home() {
         </h1>
 
 
-        <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
-          <p className="mb-1 font-bold">⚠️ Aviso importante: falla masiva DIRECTV</p>
-          <p>Informamos que DIRECTV presenta una falla masiva desde la mañana del domingo 8 de noviembre. El inconveniente se encuentra en proceso de solución. Agradecemos su comprensión y lamentamos las molestias ocasionadas.</p>
+        <div role="status" className="mb-6 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-left text-sm text-emerald-950">
+          <p className="mb-2 flex items-center gap-2 text-base font-bold"><span aria-hidden="true">✓</span> Servicio DIRECTV normalizado</p>
+          <p>Informamos que la falla masiva que afectó los servicios de DIRECTV ya fue solucionada.</p>
+          <p className="mt-2">Si aún presentas problemas con tu servicio de televisión o internet, contáctanos directamente por WhatsApp para revisar tu caso.</p>
+          <a href="https://wa.me/56934452707?text=Hola, soy cliente DIRECTV y aún presento problemas con mi servicio.%0A%0ARUT del titular: %0AComuna: %0AProblema que presenta: " target="_blank" rel="noopener noreferrer" className="mt-4 block w-full rounded-lg bg-green-600 px-4 py-3 text-center font-bold text-white transition hover:bg-green-700">CONTACTAR POR WHATSAPP ↗</a>
+          <p className="mt-2 text-center text-xs text-emerald-800">Atención directa · Soporte TSDS</p>
         </div>
 
         <button
