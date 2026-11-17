@@ -272,9 +272,8 @@ export default function Home() {
 
 
         <button
-          disabled
-          aria-disabled="true"
-          className="w-full cursor-not-allowed rounded-lg bg-gray-400 py-4 font-semibold text-white opacity-70"
+          onClick={() => setMostrarFormulario(true)}
+          className="w-full rounded-lg bg-blue-700 py-4 font-semibold text-white transition hover:bg-blue-800"
         >
           PROBLEMAS CON MI SERVICIO
         </button>
