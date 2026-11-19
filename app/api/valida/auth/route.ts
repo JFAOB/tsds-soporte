@@ -14,12 +14,12 @@ export async function POST(request: Request) {
   const {data,error}=await auth.auth.signInWithPassword({email:body.email,password:body.password});
   if(error || !data.session) return NextResponse.json({error:"Correo o contraseña incorrectos."},{status:401});
   const response=NextResponse.json({ok:true});
-  response.cookies.set(SESSION_COOKIE,data.session.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/valida",maxAge:Math.min(data.session.expires_in,3600)});
+  response.cookies.set(SESSION_COOKIE,data.session.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:Math.min(data.session.expires_in,3600)});
   // The session must also be verified against staff before granting any data access.
   return response;
 }
 export async function DELETE() {
   const response=NextResponse.json({ok:true});
-  response.cookies.set(SESSION_COOKIE,"",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/valida",maxAge:0});
+  response.cookies.set(SESSION_COOKIE,"",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:0});
   return response;
 }
