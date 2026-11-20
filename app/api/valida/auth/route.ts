@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   try { body=await request.json(); } catch { return NextResponse.json({error:"Solicitud inválida."},{status:400}); }
   if(typeof body.email!=="string" || typeof body.password!=="string" || body.email.length>254 || body.password.length>256 || !/^[a-z0-9][a-z0-9._-]{2,31}$/i.test(body.email.trim())) return NextResponse.json({error:"Credenciales inválidas."},{status:400});
   const username=body.email.trim().toLowerCase();
-  const loginEmail=username==="admin"?"jocares@tsds.cl":username+"@users.valida.tsds.invalid";
+  const loginEmail=username==="admin"?"jocares@tsds.cl":username+"@valida.tsds.cl";
   const {data,error}=await auth.auth.signInWithPassword({email:loginEmail,password:body.password});
   if(error || !data.session) return NextResponse.json({error:"Usuario o contraseña incorrectos."},{status:401});
   const db=privateClient();
