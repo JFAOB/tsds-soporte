@@ -7,7 +7,7 @@ export async function GET() {
 }
 export async function POST(request: Request) {
   const auth = authClient();
-  if (!auth || !process.env.VALIDA_SUPABASE_SERVICE_ROLE_KEY) return NextResponse.json({error:"Autenticación aún no configurada."},{status:503});
+  if (!auth || !(process.env.VALIDA_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) return NextResponse.json({error:"Autenticación aún no configurada."},{status:503});
   let body: {email?:unknown;password?:unknown};
   try { body=await request.json(); } catch { return NextResponse.json({error:"Solicitud inválida."},{status:400}); }
   if(typeof body.email!=="string" || typeof body.password!=="string" || body.email.length>254 || body.password.length>256 || !/^[a-z0-9][a-z0-9._-]{2,31}$/i.test(body.email.trim())) return NextResponse.json({error:"Credenciales inválidas."},{status:400});
