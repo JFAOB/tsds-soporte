@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { authClient, privateClient, SESSION_COOKIE, staffSession } from "@/lib/valida-auth";
+export async function GET() {
+  const session = await staffSession();
+  if (!session) return NextResponse.json({error:"Sesión no autorizada."},{status:401,headers:{"Cache-Control":"no-store"}});
+  return NextResponse.json({session},{headers:{"Cache-Control":"no-store"}});
+}
+export async function POST(request: Request) {
+  const auth = authClient();
+  if (!auth || !(process.env.VALIDA_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) return NextResponse.json({error:"Autenticación aún no configurada."},{status:503});
+  let body: {email?:unknown;password?:unknown};
+  try { body=await request.json(); } catch { return NextResponse.json({error:"Solicitud inválida."},{status:400}); }
+  if(typeof body.email!=="string" || typeof body.password!=="string" || body.email.length>254 || body.password.length>256 || !/^[a-z0-9][a-z0-9._-]{2,31}$/i.test(body.email.trim())) return NextResponse.json({error:"Credenciales inválidas."},{status:400});
+  const username=body.email.trim().toLowerCase();
+  const loginEmail=username==="admin"?"jocares@tsds.cl":username+"@users.valida.tsds.invalid";
+  const {data,error}=await auth.auth.signInWithPassword({email:loginEmail,password:body.password});
+  if(error || !data.session) return NextResponse.json({error:"Usuario o contraseña incorrectos."},{status:401});
+  const db=privateClient();
+  if(!db)return NextResponse.json({error:"Servicio no configurado."},{status:503});
+  const {data:staff,error:staffError}=await db.rpc("valida_staff_lookup",{p_user_id:data.user.id}).single();
+  const profile=staff as {active:boolean;role:string}|null;
+  if(staffError||!profile?.active)return NextResponse.json({error:"Cuenta no habilitada."},{status:403});
+  const response=NextResponse.json({ok:true,role:profile.role},{headers:{"Cache-Control":"no-store"}});
+  response.cookies.set(SESSION_COOKIE,data.session.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:Math.min(data.session.expires_in,3600)});
+  // The session must also be verified against staff before granting any data access.
+  return response;
+}
+export async function DELETE() {
+  const response=NextResponse.json({ok:true});
+  response.cookies.set(SESSION_COOKIE,"",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:0});
+  return response;
+}
