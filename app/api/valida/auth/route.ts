@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { authClient, SESSION_COOKIE, staffSession } from "@/lib/valida-auth";
+import { authClient, privateClient, SESSION_COOKIE, staffSession } from "@/lib/valida-auth";
 export async function GET() {
   const session = await staffSession();
   if (!session) return NextResponse.json({error:"Sesión no autorizada."},{status:401,headers:{"Cache-Control":"no-store"}});
@@ -15,7 +15,11 @@ export async function POST(request: Request) {
   const loginEmail=username==="admin"?"jocares@tsds.cl":username+"@users.valida.tsds.invalid";
   const {data,error}=await auth.auth.signInWithPassword({email:loginEmail,password:body.password});
   if(error || !data.session) return NextResponse.json({error:"Usuario o contraseña incorrectos."},{status:401});
-  const response=NextResponse.json({ok:true});
+  const db=privateClient();
+  if(!db)return NextResponse.json({error:"Servicio no configurado."},{status:503});
+  const {data:staff,error:staffError}=await db.rpc("valida_staff_lookup",{p_user_id:data.user.id}).single();
+  if(staffError||!staff?.active)return NextResponse.json({error:"Cuenta no habilitada."},{status:403});
+  const response=NextResponse.json({ok:true,role:staff.role},{headers:{"Cache-Control":"no-store"}});
   response.cookies.set(SESSION_COOKIE,data.session.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:Math.min(data.session.expires_in,3600)});
   // The session must also be verified against staff before granting any data access.
   return response;
