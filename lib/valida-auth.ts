@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-const projectUrl = process.env.VALIDA_SUPABASE_URL;
-const publicKey = process.env.VALIDA_SUPABASE_ANON_KEY;
-const secretKey = process.env.VALIDA_SUPABASE_SERVICE_ROLE_KEY;
+const projectUrl = (process.env.VALIDA_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
+const publicKey = (process.env.VALIDA_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const secretKey = (process.env.VALIDA_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
 export const SESSION_COOKIE = "tsds_valida_access";
 export function authClient() {
   if (!projectUrl || !publicKey) return null;
