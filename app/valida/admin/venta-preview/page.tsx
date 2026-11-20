@@ -1,0 +1,1 @@
+import {redirect} from "next/navigation";import {staffSession} from "@/lib/valida-auth";import IngresoVentaForm from "../../venta-form";export const dynamic="force-dynamic";export default async function VentaPreview(){const s=await staffSession();if(s?.role!=="admin")redirect("/valida/acceso?rol=admin");return <IngresoVentaForm valida/>;}
