@@ -6,7 +6,8 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  const {id}=await params;if(!/^[0-9a-f-]{36}$/i.test(id))return NextResponse.json({error:"ID inválido."},{status:400});
  const db=privateClient();if(!db)return NextResponse.json({error:"Servicio no configurado."},{status:503});
  const {data:staff,error:lookupError}=await db.rpc("valida_staff_lookup",{p_user_id:id}).single();
- if(lookupError||!staff||staff.role!=="backoffice")return NextResponse.json({error:"Solo se pueden modificar cuentas Backoffice."},{status:403});
+ const profile=staff as {role:string}|null;
+ if(lookupError||!profile||profile.role!=="backoffice")return NextResponse.json({error:"Solo se pueden modificar cuentas Backoffice."},{status:403});
  let b:Record<string,unknown>;try{b=await request.json();}catch{return NextResponse.json({error:"Datos inválidos."},{status:400});}
  const hasZones=Object.prototype.hasOwnProperty.call(b,"zones");
  if(hasZones&&(!Array.isArray(b.zones)||b.zones.length<1||b.zones.length>8||!b.zones.every(z=>typeof z==="string"&&ZONES.has(z))||new Set(b.zones).size!==b.zones.length))return NextResponse.json({error:"Zonas inválidas."},{status:400});
