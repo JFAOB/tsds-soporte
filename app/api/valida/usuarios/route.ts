@@ -11,7 +11,8 @@ export async function GET(){
  const {data:authUsers,error:authError}=await db.auth.admin.listUsers({perPage:1000});
  if(authError)return NextResponse.json({error:"No fue posible consultar cuentas."},{status:503});
  const emails=new Map(authUsers.users.map(u=>[u.id,u.email?.endsWith("@users.valida.tsds.invalid")?u.email.split("@")[0]:(u.email==="jocares@tsds.cl"?"admin":u.email??"")]));
- return NextResponse.json({users:(users.data??[]).map(u=>({...u,username:emails.get(u.user_id)??"",zones:u.zones??[]}))},{headers:noStore});
+ const profiles=(users.data??[]) as {user_id:string;display_name:string;role:string;active:boolean;created_at:string;zones:string[]}[];
+ return NextResponse.json({users:profiles.map(u=>({...u,username:emails.get(u.user_id)??"",zones:u.zones??[]}))},{headers:noStore});
 }
 export async function POST(request:Request){
  const current=await admin();if(!current)return NextResponse.json({error:"Solo administradores."},{status:403});
@@ -23,7 +24,7 @@ export async function POST(request:Request){
  const password=typeof body.password==="string"?body.password:"";
  const zones=body.zones;
  if(!name||name.length>120||!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)||username==="admin"||password.length<12||password.length>128||!Array.isArray(zones)||zones.length<1||zones.length>8||!zones.every(z=>typeof z==="string"&&ZONES.has(z))||new Set(zones).size!==zones.length)
- return NextResponse.json({error:"Nombre, correo, contraseña de al menos 12 caracteres y zonas válidas son obligatorios."},{status:400});
+ return NextResponse.json({error:"Nombre, usuario, contraseña de al menos 12 caracteres y zonas válidas son obligatorios."},{status:400});
  const created=await db.auth.admin.createUser({email,password,email_confirm:true});
  if(created.error||!created.data.user)return NextResponse.json({error:"No fue posible crear la cuenta; comprueba si el correo ya existe."},{status:409});
  const id=created.data.user.id;
