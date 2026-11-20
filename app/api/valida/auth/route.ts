@@ -18,8 +18,9 @@ export async function POST(request: Request) {
   const db=privateClient();
   if(!db)return NextResponse.json({error:"Servicio no configurado."},{status:503});
   const {data:staff,error:staffError}=await db.rpc("valida_staff_lookup",{p_user_id:data.user.id}).single();
-  if(staffError||!staff?.active)return NextResponse.json({error:"Cuenta no habilitada."},{status:403});
-  const response=NextResponse.json({ok:true,role:staff.role},{headers:{"Cache-Control":"no-store"}});
+  const profile=staff as {active:boolean;role:string}|null;
+  if(staffError||!profile?.active)return NextResponse.json({error:"Cuenta no habilitada."},{status:403});
+  const response=NextResponse.json({ok:true,role:profile.role},{headers:{"Cache-Control":"no-store"}});
   response.cookies.set(SESSION_COOKIE,data.session.access_token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/",maxAge:Math.min(data.session.expires_in,3600)});
   // The session must also be verified against staff before granting any data access.
   return response;
