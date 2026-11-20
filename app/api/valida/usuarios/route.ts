@@ -23,8 +23,8 @@ export async function POST(request:Request){
  const email=username+"@valida.tsds.cl";
  const password=typeof body.password==="string"?body.password:"";
  const zones=body.zones;
- if(!name||name.length>120||!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)||username==="admin"||password.length<12||password.length>128||!Array.isArray(zones)||zones.length<1||zones.length>8||!zones.every(z=>typeof z==="string"&&ZONES.has(z))||new Set(zones).size!==zones.length)
- return NextResponse.json({error:"Nombre, usuario, contraseña de al menos 12 caracteres y zonas válidas son obligatorios."},{status:400});
+ if(!name||name.length>120||!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)||username==="admin"||password.length<6||password.length>128||!Array.isArray(zones)||zones.length<1||zones.length>8||!zones.every(z=>typeof z==="string"&&ZONES.has(z))||new Set(zones).size!==zones.length)
+ return NextResponse.json({error:"Nombre, usuario, contraseña de al menos 6 caracteres y zonas válidas son obligatorios."},{status:400});
  const created=await db.auth.admin.createUser({email,password,email_confirm:true});
  if(created.error||!created.data.user)return NextResponse.json({error:"No fue posible crear la cuenta; comprueba si el correo ya existe."},{status:409});
  const id=created.data.user.id;
