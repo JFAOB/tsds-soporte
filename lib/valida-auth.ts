@@ -19,9 +19,7 @@ export async function staffSession() {
   if (!token || !auth || !db) return null;
   const { data: { user }, error } = await auth.auth.getUser(token);
   if (error || !user) return null;
-  const { data: staff, error: staffError } = await db.schema("valida").from("staff").select("user_id,display_name,role,active").eq("user_id", user.id).single();
+  const { data: staff, error: staffError } = await db.rpc("valida_staff_lookup",{p_user_id:user.id}).single();
   if (staffError || !staff?.active) return null;
-  const { data: assigned, error: zonesError } = await db.schema("valida").from("staff_zones").select("zone_code").eq("user_id", user.id);
-  if (zonesError) return null;
-  return { userId: user.id, email: user.email ?? "", name: staff.display_name as string, role: staff.role as "admin" | "backoffice", zones: staff.role === "admin" ? ["CONCEPCION","TEMUCO","VALDIVIA","OSORNO","PUERTO MONTT","COYHAIQUE","PUNTA ARENAS","ONLINE"] : (assigned??[]).map(x=>x.zone_code as string) };
+  return { userId: user.id, email: user.email ?? "", name: staff.display_name as string, role: staff.role as "admin" | "backoffice", zones: staff.role === "admin" ? ["CONCEPCION","TEMUCO","VALDIVIA","OSORNO","PUERTO MONTT","COYHAIQUE","PUNTA ARENAS","ONLINE"] : (staff.zones??[]) };
 }
