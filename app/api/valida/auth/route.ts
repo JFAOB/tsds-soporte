@@ -10,8 +10,9 @@ export async function POST(request: Request) {
   if (!auth || !process.env.VALIDA_SUPABASE_SERVICE_ROLE_KEY) return NextResponse.json({error:"Autenticación aún no configurada."},{status:503});
   let body: {email?:unknown;password?:unknown};
   try { body=await request.json(); } catch { return NextResponse.json({error:"Solicitud inválida."},{status:400}); }
-  if(typeof body.email!=="string" || typeof body.password!=="string" || body.email.length>254 || body.password.length>256 || !(body.email.includes("@") || body.email.trim().toLowerCase()==="admin")) return NextResponse.json({error:"Credenciales inválidas."},{status:400});
-  const loginEmail=body.email.trim().toLowerCase()==="admin"?"jocares@tsds.cl":body.email.trim();
+  if(typeof body.email!=="string" || typeof body.password!=="string" || body.email.length>254 || body.password.length>256 || !/^[a-z0-9][a-z0-9._-]{2,31}$/i.test(body.email.trim())) return NextResponse.json({error:"Credenciales inválidas."},{status:400});
+  const username=body.email.trim().toLowerCase();
+  const loginEmail=username==="admin"?"jocares@tsds.cl":username+"@users.valida.tsds.invalid";
   const {data,error}=await auth.auth.signInWithPassword({email:loginEmail,password:body.password});
   if(error || !data.session) return NextResponse.json({error:"Usuario o contraseña incorrectos."},{status:401});
   const response=NextResponse.json({ok:true});
