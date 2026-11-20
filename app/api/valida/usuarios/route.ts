@@ -10,7 +10,7 @@ export async function GET(){
  if(users.error)return NextResponse.json({error:"No fue posible consultar usuarios."},{status:503});
  const {data:authUsers,error:authError}=await db.auth.admin.listUsers({perPage:1000});
  if(authError)return NextResponse.json({error:"No fue posible consultar cuentas."},{status:503});
- const emails=new Map(authUsers.users.map(u=>[u.id,u.email?.endsWith("@users.valida.tsds.invalid")?u.email.split("@")[0]:(u.email==="jocares@tsds.cl"?"admin":u.email??"")]));
+ const emails=new Map(authUsers.users.map(u=>[u.id,u.email?.endsWith("@valida.tsds.cl")?u.email.split("@")[0]:(u.email==="jocares@tsds.cl"?"admin":u.email??"")]));
  const profiles=(users.data??[]) as {user_id:string;display_name:string;role:string;active:boolean;created_at:string;zones:string[]}[];
  return NextResponse.json({users:profiles.map(u=>({...u,username:emails.get(u.user_id)??"",zones:u.zones??[]}))},{headers:noStore});
 }
@@ -20,7 +20,7 @@ export async function POST(request:Request){
  let body:Record<string,unknown>;try{body=await request.json();}catch{return NextResponse.json({error:"Datos inválidos."},{status:400});}
  const name=typeof body.name==="string"?body.name.trim():"";
  const username=typeof body.username==="string"?body.username.trim().toLowerCase():"";
- const email=username+"@users.valida.tsds.invalid";
+ const email=username+"@valida.tsds.cl";
  const password=typeof body.password==="string"?body.password:"";
  const zones=body.zones;
  if(!name||name.length>120||!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)||username==="admin"||password.length<12||password.length>128||!Array.isArray(zones)||zones.length<1||zones.length>8||!zones.every(z=>typeof z==="string"&&ZONES.has(z))||new Set(zones).size!==zones.length)
