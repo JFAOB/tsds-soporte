@@ -20,6 +20,7 @@ export async function staffSession() {
   const { data: { user }, error } = await auth.auth.getUser(token);
   if (error || !user) return null;
   const { data: staff, error: staffError } = await db.rpc("valida_staff_lookup",{p_user_id:user.id}).single();
-  if (staffError || !staff?.active) return null;
-  return { userId: user.id, email: user.email ?? "", name: staff.display_name as string, role: staff.role as "admin" | "backoffice", zones: staff.role === "admin" ? ["CONCEPCION","TEMUCO","VALDIVIA","OSORNO","PUERTO MONTT","COYHAIQUE","PUNTA ARENAS","ONLINE"] : (staff.zones??[]) };
+  const profile=staff as {user_id:string;display_name:string;role:"admin"|"backoffice";active:boolean;zones:string[]} | null;
+  if (staffError || !profile?.active) return null;
+  return { userId: user.id, email: user.email ?? "", name: profile.display_name as string, role: profile.role as "admin" | "backoffice", zones: profile.role === "admin" ? ["CONCEPCION","TEMUCO","VALDIVIA","OSORNO","PUERTO MONTT","COYHAIQUE","PUNTA ARENAS","ONLINE"] : (profile.zones??[]) };
 }
